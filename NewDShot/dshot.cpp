@@ -2,50 +2,50 @@
 
 // PWM output pins choosen for DSHOT
 uint8_t DSHOT_pin[DSHOT_NUM_PORT] = {
-    2,
-    3,
-    4,
-    5
+    4, 
+    8, 
+    24, 
+    22, 
 };
 
 // Pointers to the eFlexPWM modules choosen to generate the DSHOT outputs
 IMXRT_FLEXPWM_t *DSHOT_mod[DSHOT_NUM_PORT]  = { 
-    &IMXRT_FLEXPWM4,   
-    &IMXRT_FLEXPWM4,    
-    &IMXRT_FLEXPWM2,  
-    &IMXRT_FLEXPWM2
+    &IMXRT_FLEXPWM2, 
+    &IMXRT_FLEXPWM1,  
+    &IMXRT_FLEXPWM1,  
+    &IMXRT_FLEXPWM4,
 };
 
 // Index of the sub_module used from the eFlexPWM modules
 uint8_t DSHOT_sub[DSHOT_NUM_PORT] = {
-    2,
-    2,
-    0,
-    1
+    0, 
+    3, 
+    2, 
+    0, 
 };
 
 // Channel selector for each sub_module used. 0=A, 1=B
 uint8_t DSHOT_cha[DSHOT_NUM_PORT] = {
+    0, 
+    0, 
+    2, 
     0,
-    0,
-    1,
-    0
 };   
 
 // ALT value used to map/mux the PWM output to the physical output pin.
 uint8_t DSHOT_pinmux[DSHOT_NUM_PORT] = {
-    1,
-    1,
-    1,
-    1
+    1, 
+    6, 
+    4, 
+    1, 
 };
 
 // Hardware events used to trigger next DMA transfer. Triggers at end of each PWM write
 uint8_t DSHOT_event[DSHOT_NUM_PORT] = {
-    DMAMUX_SOURCE_FLEXPWM4_WRITE2,
-    DMAMUX_SOURCE_FLEXPWM4_WRITE2,
     DMAMUX_SOURCE_FLEXPWM2_WRITE0,
-    DMAMUX_SOURCE_FLEXPWM2_WRITE1,
+    DMAMUX_SOURCE_FLEXPWM1_WRITE3,
+    DMAMUX_SOURCE_FLEXPWM1_WRITE2,
+    DMAMUX_SOURCE_FLEXPWM4_WRITE0,
 };
 
 // DMA objects
@@ -89,8 +89,6 @@ DShot::DShot( uint8_t num ){
     // Select eFlexPWM module and sub_module for PWM generation based on index
     pwm_module = DSHOT_mod[index];
     sub_module = DSHOT_sub[index];
-    dma = &DSHOT_dma[index];
-
 }
 
 void DShot::setup(){
@@ -120,17 +118,17 @@ void DShot::setup(){
 
 
     /* --- Configuration of DMA transfer --- */
-    dma->sourceBuffer( dma_buffer, DSHOT_DMA_LENGTH * sizeof( uint16_t ) );
+    DSHOT_dma[index].sourceBuffer( dma_buffer, DSHOT_DMA_LENGTH * sizeof( uint16_t ) );
     // Depending on the channel, write to different destination
     if ( DSHOT_cha[index] == 1 ) {
-        dma->destination( (uint16_t&) (*pwm_module).SM[sub_module].VAL5 );
+        DSHOT_dma[index].destination( (uint16_t&) (*pwm_module).SM[sub_module].VAL5 );
     } else {
-        dma->destination( (uint16_t&) (*pwm_module).SM[sub_module].VAL3 );
+        DSHOT_dma[index].destination( (uint16_t&) (*pwm_module).SM[sub_module].VAL3 );
     }
-    dma->triggerAtHardwareEvent( DSHOT_event[index] );
-    dma->interruptAtCompletion();
-    dma->attachInterrupt( DSHOT_DMA_ISR[index] );
-    dma->enable(); 
+    DSHOT_dma[index].triggerAtHardwareEvent( DSHOT_event[index] );
+    DSHOT_dma[index].interruptAtCompletion();
+    DSHOT_dma[index].attachInterrupt( DSHOT_DMA_ISR[index] );
+    DSHOT_dma[index].enable(); 
 
 }
 

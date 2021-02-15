@@ -1,5 +1,12 @@
 #include "DSHOT.h"
 
+uint8_t led_pin = 15;
+bool led_state = LOW;
+
+uint16_t throttle = 300;
+uint8_t tlm = 0;
+
+
 #define ESCCMD_CMD_REPETITION   10                // Number of time commands have to be repeated to be acknowledged by ESC
 #define ESCCMD_CMD_ARMING_REP   25                // Number of command repetition to arm
 #define ESCCMD_CMD_DELAY        50                // Delay between two consecutive DSHOT transmissions (us)
@@ -35,28 +42,34 @@ typedef enum {
   DSHOT_CMD_MAX = 47
 } DSHOT_commands;
 
+
+
 void setup() {
+
+  pinMode(led_pin, OUTPUT);
 
   Serial.begin(9600);
   Serial.println("HEY");
-  // DSHOT_init(4);
+  DSHOT_init(0);
 
   // Send command ESCCMD_CMD_ARMING_REP times
-  /* for ( int i = 0; i < ESCCMD_CMD_ARMING_REP; i++ )  {
+  for ( int i = 0; i < 500; i++ )  {
 
     // Send DSHOT signal to all ESCs
     DSHOT_send( (uint16_t)DSHOT_CMD_MOTOR_STOP, (uint8_t)0 );
     // Wait some time
-    delayMicroseconds( 2 * ESCCMD_CMD_DELAY );
-  }*/ 
+    delayMicroseconds( 2000 );
+  } 
 
-  delay(100);
-  
 }
+
 
 void loop() {
   // put your main code here, to run repeatedly:
-  // DSHOT_send( (uint16_t)200, (uint8_t)1 );
-  Serial.println("HELLO");
-  delay(100);
+  
+  led_state = !led_state;
+  digitalWrite(led_pin, led_state);
+  delayMicroseconds( 2000 );
+
+  DSHOT_send( throttle, tlm );
 }

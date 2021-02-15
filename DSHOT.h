@@ -27,6 +27,6 @@
 
 // Function prototypes
 void DSHOT_init( int );
-int DSHOT_send( uint16_t*, uint8_t* );
+int DSHOT_send( uint16_t, uint8_t);
 
 #endif
