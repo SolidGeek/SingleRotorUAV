@@ -1,0 +1,124 @@
+microcontroller.pin.GPIO_AD_B0_00        
+microcontroller.pin.GPIO_AD_B0_01        
+microcontroller.pin.GPIO_AD_B0_02        board.D1 board.TX board.TX1 
+microcontroller.pin.GPIO_AD_B0_03        board.D0 board.RX board.RX1 
+microcontroller.pin.GPIO_AD_B0_04        
+microcontroller.pin.GPIO_AD_B0_05        
+microcontroller.pin.GPIO_AD_B0_06        
+microcontroller.pin.GPIO_AD_B0_07        
+microcontroller.pin.GPIO_AD_B0_08        
+microcontroller.pin.GPIO_AD_B0_09        
+microcontroller.pin.GPIO_AD_B0_10        
+microcontroller.pin.GPIO_AD_B0_11        
+microcontroller.pin.GPIO_AD_B0_12        board.A10 board.D24 
+microcontroller.pin.GPIO_AD_B0_13        board.A11 board.D25 
+microcontroller.pin.GPIO_AD_B0_14        
+microcontroller.pin.GPIO_AD_B0_15        
+microcontroller.pin.GPIO_AD_B1_00        board.A5 board.D19 board.SCL board.SCL0 
+microcontroller.pin.GPIO_AD_B1_01        board.A4 board.D18 board.SDA board.SDA0 
+microcontroller.pin.GPIO_AD_B1_02        board.A0 board.D14 
+microcontroller.pin.GPIO_AD_B1_03        board.A1 board.D15 
+microcontroller.pin.GPIO_AD_B1_04        
+microcontroller.pin.GPIO_AD_B1_05        
+microcontroller.pin.GPIO_AD_B1_06        board.A3 board.D17 
+microcontroller.pin.GPIO_AD_B1_07        board.A2 board.D16 
+microcontroller.pin.GPIO_AD_B1_08        board.A8 board.D22 
+microcontroller.pin.GPIO_AD_B1_09        board.A9 board.D23 
+microcontroller.pin.GPIO_AD_B1_10        board.A6 board.D20 
+microcontroller.pin.GPIO_AD_B1_11        board.A7 board.D21 
+microcontroller.pin.GPIO_AD_B1_12        
+microcontroller.pin.GPIO_AD_B1_13        
+microcontroller.pin.GPIO_AD_B1_14        board.A12 board.D26 
+microcontroller.pin.GPIO_AD_B1_15        board.A13 board.D27 
+microcontroller.pin.GPIO_B0_00   board.D10 
+microcontroller.pin.GPIO_B0_01   board.D12 board.MISO 
+microcontroller.pin.GPIO_B0_02   board.D11 board.MOSI 
+microcontroller.pin.GPIO_B0_03   board.D13 board.SCK 
+microcontroller.pin.GPIO_B0_04   
+microcontroller.pin.GPIO_B0_05   
+microcontroller.pin.GPIO_B0_06   
+microcontroller.pin.GPIO_B0_07   
+microcontroller.pin.GPIO_B0_08   
+microcontroller.pin.GPIO_B0_09   
+microcontroller.pin.GPIO_B0_10   board.D6 
+microcontroller.pin.GPIO_B0_11   board.D9 
+microcontroller.pin.GPIO_B0_12   board.D32 
+microcontroller.pin.GPIO_B0_13   
+microcontroller.pin.GPIO_B0_14   
+microcontroller.pin.GPIO_B0_15   
+microcontroller.pin.GPIO_B1_00   board.D8 
+microcontroller.pin.GPIO_B1_01   board.D7 
+microcontroller.pin.GPIO_B1_02   
+microcontroller.pin.GPIO_B1_03   
+microcontroller.pin.GPIO_B1_04   
+microcontroller.pin.GPIO_B1_05   
+microcontroller.pin.GPIO_B1_06   
+microcontroller.pin.GPIO_B1_07   
+microcontroller.pin.GPIO_B1_08   
+microcontroller.pin.GPIO_B1_09   
+microcontroller.pin.GPIO_B1_10   
+microcontroller.pin.GPIO_B1_11   
+microcontroller.pin.GPIO_B1_12   
+microcontroller.pin.GPIO_B1_13   
+microcontroller.pin.GPIO_B1_14   
+microcontroller.pin.GPIO_B1_15   
+microcontroller.pin.GPIO_EMC_00  
+microcontroller.pin.GPIO_EMC_01  
+microcontroller.pin.GPIO_EMC_02  
+microcontroller.pin.GPIO_EMC_03  
+microcontroller.pin.GPIO_EMC_04  board.D2 
+microcontroller.pin.GPIO_EMC_05  board.D3 
+microcontroller.pin.GPIO_EMC_06  board.D4 
+microcontroller.pin.GPIO_EMC_07  board.D33 
+microcontroller.pin.GPIO_EMC_08  board.D5 
+microcontroller.pin.GPIO_EMC_09  
+microcontroller.pin.GPIO_EMC_10  
+microcontroller.pin.GPIO_EMC_11  
+microcontroller.pin.GPIO_EMC_12  
+microcontroller.pin.GPIO_EMC_13  
+microcontroller.pin.GPIO_EMC_14  
+microcontroller.pin.GPIO_EMC_15  
+microcontroller.pin.GPIO_EMC_16  
+microcontroller.pin.GPIO_EMC_17  
+microcontroller.pin.GPIO_EMC_18  
+microcontroller.pin.GPIO_EMC_19  
+microcontroller.pin.GPIO_EMC_20  
+microcontroller.pin.GPIO_EMC_21  
+microcontroller.pin.GPIO_EMC_22  
+microcontroller.pin.GPIO_EMC_23  
+microcontroller.pin.GPIO_EMC_24  
+microcontroller.pin.GPIO_EMC_25  
+microcontroller.pin.GPIO_EMC_26  
+microcontroller.pin.GPIO_EMC_27  
+microcontroller.pin.GPIO_EMC_28  
+microcontroller.pin.GPIO_EMC_29  
+microcontroller.pin.GPIO_EMC_30  
+microcontroller.pin.GPIO_EMC_31  board.D29 
+microcontroller.pin.GPIO_EMC_32  board.D28 
+microcontroller.pin.GPIO_EMC_33  
+microcontroller.pin.GPIO_EMC_34  
+microcontroller.pin.GPIO_EMC_35  
+microcontroller.pin.GPIO_EMC_36  board.D31 
+microcontroller.pin.GPIO_EMC_37  board.D30 
+microcontroller.pin.GPIO_EMC_38  
+microcontroller.pin.GPIO_EMC_39  
+microcontroller.pin.GPIO_EMC_40  
+microcontroller.pin.GPIO_EMC_41  
+microcontroller.pin.GPIO_SD_B0_00        board.CMD board.D37 
+microcontroller.pin.GPIO_SD_B0_01        board.CLK board.D36 
+microcontroller.pin.GPIO_SD_B0_02        board.D35 board.DAT0 
+microcontroller.pin.GPIO_SD_B0_03        board.D34 board.DAT1 
+microcontroller.pin.GPIO_SD_B0_04        board.D38 board.DAT3 
+microcontroller.pin.GPIO_SD_B0_05        board.D39 board.DAT2 
+microcontroller.pin.GPIO_SD_B1_00        
+microcontroller.pin.GPIO_SD_B1_01        
+microcontroller.pin.GPIO_SD_B1_02        
+microcontroller.pin.GPIO_SD_B1_03        
+microcontroller.pin.GPIO_SD_B1_04        
+microcontroller.pin.GPIO_SD_B1_05        
+microcontroller.pin.GPIO_SD_B1_06        
+microcontroller.pin.GPIO_SD_B1_07        
+microcontroller.pin.GPIO_SD_B1_08        
+microcontroller.pin.GPIO_SD_B1_09        
+microcontroller.pin.GPIO_SD_B1_10        
+microcontroller.pin.GPIO_SD_B1_11        
