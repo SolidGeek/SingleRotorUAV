@@ -7,8 +7,7 @@
 
 #define F_TMR F_BUS_ACTUAL
 
-// Total number of DSHOT outputs configured
-#define DSHOT_NUM_PORT          4
+#define DSHOT_MAX_OUTPUT          4             // Total number of DSHOT outputs configured (more may be configurable)
 
 #define DSHOT_DMA_LENGTH          18            // Number of steps of one DMA sequence (the two last values are zero)
 #define DSHOT_DMA_MARGIN          2             // Number of additional bit duration to wait until checking if DMA is over
@@ -18,6 +17,7 @@
 #define DSHOT_0B_DURATION         625           // Duration of a DSHOT600 short pulse in ns
 #define DSHOT_MAX_VALUE           2047          // Maximum DSHOT value
 
+#define DSHOT_TLM_LENGTH          10            // Number of bytes in the telemetry packet
 
 class DShot
 {
@@ -29,27 +29,24 @@ public:
 		float amps;
 		float ampHours;
 		float rpm;
-	} tlm;
+	} tlm[DSHOT_MAX_OUTPUT];
 
-	DShot( uint8_t num );
+	DShot( uint8_t count );
 
-  void setup();
- 
-  void write( uint16_t cmd, bool tlm );
+    void setup();
+
+    void write( uint16_t *cmd, uint8_t *tlm );
+    void write( uint8_t num, uint16_t cmd, uint8_t tlm );
 
 private:
 
-    // Index of the choosen preconfigured module
-    uint8_t index;
+    // Number of configured outputs
+    uint8_t output_count;
 
-	  DMAChannel *dma;
-    IMXRT_FLEXPWM_t *pwm_module;
-    uint8_t sub_module;
+    // DSHOT output buffer
+    volatile uint16_t buffer[DSHOT_MAX_OUTPUT][DSHOT_DMA_LENGTH];
 
-    // DMA buffer
-    volatile uint16_t dma_buffer[DSHOT_DMA_LENGTH];
-    
-    uint16_t short_pulse, long_pulse, bit_length;
+    uint8_t tlm_buffer[DSHOT_MAX_OUTPUT][DSHOT_TLM_LENGTH];
 
 };
 
