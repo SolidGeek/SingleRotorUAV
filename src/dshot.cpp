@@ -206,6 +206,175 @@ void DShot::write( uint16_t *cmd, uint8_t *tlm ){
     }
 }
 
+void DShot::arm_motor( uint8_t num ){
+    cmd[num] = DSHOT_CMD_MOTOR_STOP;
+    tlm[num] = 0;
+
+    for (uint16_t i = 0; i < DSHOT_ARMING_REPS; i++)
+    {
+        write( num, cmd[num], tlm[num] );
+        delayMicroseconds( DSHOT_COMMAND_DELAY_US );
+    }
+}
+
+void DShot::arm_motors( void ){
+    for (uint8_t n = 0; n < output_count; n++)
+    {
+        cmd[n] = DSHOT_CMD_MOTOR_STOP;
+        tlm[n] = 0;
+    }
+
+    for (uint16_t i = 0; i < DSHOT_ARMING_REPS; i++)
+    {
+        write( cmd, tlm );
+        delayMicroseconds( DSHOT_COMMAND_DELAY_US );
+    }
+}
+
+void DShot::set_mode_normal( uint8_t num ){
+    tlm[num] = 1;
+    cmd[num] = DSHOT_CMD_3D_MODE_OFF;
+
+    for (uint8_t i = 0; i < DSHOT_SETTING_REPS; i++)
+    {
+        write( num, cmd[num], tlm[num] );
+        delayMicroseconds( DSHOT_COMMAND_DELAY_US );
+    }
+
+    delay( 100 );
+
+    save_settings(num);
+}
+
+void DShot::set_rotation_normal( uint8_t num ){
+    
+    // Telemetry bit must be high when changing configuration
+    tlm[num] = 1;
+    cmd[num] = DSHOT_CMD_SPIN_DIRECTION_1;
+
+    for (uint8_t i = 0; i < DSHOT_SETTING_REPS; i++)
+    {
+        write( num, cmd[num], tlm[num] );
+        delayMicroseconds( DSHOT_COMMAND_DELAY_US );
+    }
+
+    delay( 100 );
+
+    save_settings(num);
+}
+
+void DShot::set_rotation_reverse( uint8_t num ){
+    // Telemetry bit must be high when changing configuration
+    tlm[num] = 1;
+    cmd[num] = DSHOT_CMD_SPIN_DIRECTION_2;
+
+    for (uint8_t i = 0; i < DSHOT_SETTING_REPS; i++)
+    {
+        write( num, cmd[num], tlm[num] );
+        delayMicroseconds( DSHOT_COMMAND_DELAY_US );
+    }
+
+    delay( 100 );
+
+    save_settings(num);
+}
+
+void DShot::save_settings( uint8_t num ){
+    tlm[num] = 1;
+    cmd[num] = DSHOT_CMD_SAVE_SETTINGS;
+
+	for( uint8_t i = 0; i < DSHOT_SETTING_REPS; i++){
+		write( num, cmd[num], tlm[num] );
+        delayMicroseconds( DSHOT_COMMAND_DELAY_US );	
+	}
+}
+
+// https://github.com/betaflight/betaflight/blob/243be1d216c92899daf89d0b638645b054d26109/src/main/cli/cli.c#L3661
+void DShot::request_esc_info( uint8_t num, Stream * port ){
+
+    uint8_t buffer[64] = {'\0'};
+    char print_buffer[200] = {'\0'};
+    uint8_t count = 0;
+    uint8_t frame_length = 0;
+
+    uint8_t firmware_version = 0;
+    uint8_t firmware_subversion = 0;
+    uint8_t esc_type = 0;
+
+    // Clear Serial port
+    while( port->available() ){
+        port->read();
+    }
+
+    // ESC Info format: (bytes)
+    // https://github.com/betaflight/betaflight/pull/3267#discussion_r126349307
+    /*  1-12: ESC SN
+        13: now idicates if the new response is used. so if its 255 it is the new version.
+        14: EEprom/version (1.01 == 101)
+        15: ESC type
+        16: ESC sub version letter
+        17: rotation direction reversed by dshot command or not (1:0)
+        18: 3D mode active or not (1:0)
+        19: unused for now.. maybe used for new settings
+        20: unused for now.. maybe used for new settings
+        21: crc (same crc as is used for telemetry) */
+
+    tlm[num] = 1;
+    cmd[num] = DSHOT_CMD_ESC_INFO;
+    write( num, cmd[num], tlm[num] );
+
+    // Wait a second ms
+    delay(10);
+
+    // Listen for serial data
+    while( port->available() ){     
+        buffer[count++] = port->read();
+    }
+
+    if( count > ESC_INFO_VERSION_POSITION ){
+
+        // KISS V2 ESC
+        if ( buffer[ESC_INFO_VERSION_POSITION] == 255) {
+            frame_length = ESC_INFO_KISS_V2_EXPECTED_FRAME_SIZE;
+
+            // Check if a complete frame was received.
+            if( count == frame_length ){
+
+                firmware_version = buffer[13];
+                firmware_subversion = buffer[14];
+                esc_type = buffer[15];
+
+                sprintf( print_buffer, "### ESC Info from Channel %d ###", num );
+                Serial.println(print_buffer);
+
+                Serial.print("ESC type ID: ");
+                Serial.println(esc_type);
+
+                Serial.print("MCU Serial No: 0x");
+                for (int i = 0; i < 12; i++) {
+                    if (i && (i % 3 == 0)) {
+                        Serial.print("-");
+                    }
+                    sprintf( print_buffer, "%02x", buffer[i]);
+                    Serial.print( print_buffer );
+                }
+                Serial.println();
+
+                sprintf( print_buffer, "Firmware: %d.%02d%c", firmware_version / 100, firmware_version % 100, (char)firmware_subversion );
+                Serial.println(print_buffer);
+
+                sprintf( print_buffer, "Rotation: %s", buffer[16] ? "reverse" : "normal");
+                Serial.println(print_buffer);
+
+                sprintf( print_buffer, "3D Mode: %s", buffer[17] ? "on" : "off");
+                Serial.println(print_buffer);
+
+            }
+        }
+
+    }
+}
+
 /* 
 DShot::parse_tlm(){
 
