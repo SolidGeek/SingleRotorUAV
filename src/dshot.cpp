@@ -150,6 +150,8 @@ void DShot::setup(){
         DSHOT_dma[n].enable(); 
     }
 
+    delay(10);
+
 }
 
 void DShot::write( uint8_t num, uint16_t cmd, uint8_t tlm ){
@@ -206,7 +208,7 @@ void DShot::write( uint16_t *cmd, uint8_t *tlm ){
     }
 }
 
-void DShot::arm_motor( uint8_t num ){
+void DShot::armMotor( uint8_t num ){
     cmd[num] = DSHOT_CMD_MOTOR_STOP;
     tlm[num] = 0;
 
@@ -217,7 +219,7 @@ void DShot::arm_motor( uint8_t num ){
     }
 }
 
-void DShot::arm_motors( void ){
+void DShot::armMotors( void ){
     for (uint8_t n = 0; n < output_count; n++)
     {
         cmd[n] = DSHOT_CMD_MOTOR_STOP;
@@ -231,9 +233,9 @@ void DShot::arm_motors( void ){
     }
 }
 
-void DShot::set_mode_normal( uint8_t num ){
+void DShot::setConfig( uint8_t num, DSHOT_command param ){
     tlm[num] = 1;
-    cmd[num] = DSHOT_CMD_3D_MODE_OFF;
+    cmd[num] = param;
 
     for (uint8_t i = 0; i < DSHOT_SETTING_REPS; i++)
     {
@@ -241,45 +243,13 @@ void DShot::set_mode_normal( uint8_t num ){
         delayMicroseconds( DSHOT_COMMAND_DELAY_US );
     }
 
-    delay( 100 );
+    saveConfig(num);
 
-    save_settings(num);
+    delay( 500 ); // Wait before new config
 }
 
-void DShot::set_rotation_normal( uint8_t num ){
-    
-    // Telemetry bit must be high when changing configuration
-    tlm[num] = 1;
-    cmd[num] = DSHOT_CMD_SPIN_DIRECTION_1;
 
-    for (uint8_t i = 0; i < DSHOT_SETTING_REPS; i++)
-    {
-        write( num, cmd[num], tlm[num] );
-        delayMicroseconds( DSHOT_COMMAND_DELAY_US );
-    }
-
-    delay( 100 );
-
-    save_settings(num);
-}
-
-void DShot::set_rotation_reverse( uint8_t num ){
-    // Telemetry bit must be high when changing configuration
-    tlm[num] = 1;
-    cmd[num] = DSHOT_CMD_SPIN_DIRECTION_2;
-
-    for (uint8_t i = 0; i < DSHOT_SETTING_REPS; i++)
-    {
-        write( num, cmd[num], tlm[num] );
-        delayMicroseconds( DSHOT_COMMAND_DELAY_US );
-    }
-
-    delay( 100 );
-
-    save_settings(num);
-}
-
-void DShot::save_settings( uint8_t num ){
+void DShot::saveConfig( uint8_t num ){
     tlm[num] = 1;
     cmd[num] = DSHOT_CMD_SAVE_SETTINGS;
 
@@ -290,7 +260,7 @@ void DShot::save_settings( uint8_t num ){
 }
 
 // https://github.com/betaflight/betaflight/blob/243be1d216c92899daf89d0b638645b054d26109/src/main/cli/cli.c#L3661
-void DShot::request_esc_info( uint8_t num, Stream * port ){
+void DShot::requestConfig( uint8_t num, Stream * port ){
 
     uint8_t buffer[64] = {'\0'};
     char print_buffer[200] = {'\0'};

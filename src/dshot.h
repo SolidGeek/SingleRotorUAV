@@ -51,7 +51,7 @@ typedef enum {
     DSHOT_CMD_MAX = 47
 } DSHOT_command;
 
-#define DSHOT_ARMING_REPS       25 
+#define DSHOT_ARMING_REPS       50 
 #define DSHOT_SETTING_REPS      10 
 #define DSHOT_COMMAND_DELAY_US 1000
 
@@ -80,17 +80,14 @@ public:
     void write( uint16_t *cmd, uint8_t *tlm );
     void write( uint8_t num, uint16_t cmd, uint8_t tlm );
 
-    void arm_motor( uint8_t num );
-    void arm_motors( void );
+    void armMotor( uint8_t num );
+    void armMotors( void );
 
-    void set_rotation_normal( uint8_t num );
-    void set_rotation_reverse( uint8_t num );
+    void setConfig( uint8_t num, DSHOT_command param );
 
-    void set_mode_normal( uint8_t num );
+    void saveConfig( uint8_t num );
 
-    void save_settings( uint8_t num );
-
-    void request_esc_info( uint8_t num, Stream * port );
+    void requestConfig( uint8_t num, Stream * port );
 
 private:
 

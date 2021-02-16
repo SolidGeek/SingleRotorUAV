@@ -5,7 +5,7 @@
 DShot ESC(DSHOT_N); // Prepare two DSHOT outputs
 
 uint16_t throttle = 60;
-uint8_t tlm = 1;
+uint8_t tlm = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -16,23 +16,22 @@ void setup() {
   // Configure the DSHOT outputs
   ESC.setup();
 
-  ESC.arm_motor( 0 );
-  
+  // Get last settings. Cannot be called after settings are changed (dunno why)
+  ESC.requestConfig( 0, &Serial1 );
+
+  ESC.setConfig( 0, DSHOT_CMD_SPIN_DIRECTION_1 );
+  ESC.setConfig( 0, DSHOT_CMD_3D_MODE_OFF );
+
   delay(1000);
 
-  ESC.set_rotation_reverse( 0 );
-  
-  // Serial.println("STATUS: DSHOT outputs configured");
-  // delay(500);
+  Serial.println("CAUTION: Arming motors");
+  ESC.armMotor( 0 );
 
-  // Serial.println("CAUTION: Motors armed");
-  delay(1000);
-  
-  ESC.request_esc_info( 0, &Serial1 );
-  
 }
 
 void loop() {
-
+  
+  ESC.write(0, throttle, tlm);
+  delay(10);
 
 }
