@@ -2,13 +2,6 @@
 #include "DMAChannel.h"
 #include "dshot.h"
 
-HardwareSerial*  DSHOT_serial[DSHOT_MAX_OUTPUT] = {
-    &Serial1,
-    &Serial2,
-    &Serial3,
-    &Serial4
-};
-
 // Calculate pulse durations
 const uint16_t DSHOT_short_pulse  = uint64_t(F_TMR) * DSHOT_0B_DURATION / 1000000000;     // DSHOT short pulse duration (nb of F_BUS periods)
 const uint16_t DSHOT_long_pulse   = uint64_t(F_TMR) * DSHOT_1B_DURATION / 1000000000;     // DSHOT long pulse duration (nb of F_BUS periods)
@@ -208,6 +201,41 @@ void DShot::write( uint16_t *cmd, uint8_t *tlm ){
     }
 }
 
+// Read all bytes in rx buffer up to packet length
+DSHOT_telemetry *DShot::readTelemetry( uint8_t num, Stream * port ){
+
+    static uint8_t buffer_index[DSHOT_MAX_OUTPUT] = { 0 };
+
+    while ( ( port->available( ) ) && ( buffer_index[num] < DSHOT_TLM_LENGTH ) ) {
+        tlm_buffer[num][buffer_index[num]] = (uint8_t)port->read();
+        buffer_index[num]++;
+    }
+
+    // Check if a complete packet has arrived
+    if ( buffer_index[num] == DSHOT_TLM_LENGTH  )  {
+
+        // Reset byte index in packet buffer
+        buffer_index[num] = 0;
+
+        uint8_t crc = get_crc8(tlm_buffer[num], DSHOT_TLM_LENGTH-1); 
+      
+      	if(crc == tlm_buffer[num][9]){
+
+      		// Telemetry success, CRC was valid 
+			tlm_data[num].temp       	= (uint8_t)(tlm_buffer[num][0]); // Degress Celcius
+			tlm_data[num].voltage    	= (uint16_t)((tlm_buffer[num][1]<<8)|tlm_buffer[num][2]); // decivolt [dV] 10^-1 V (0.01V)
+			tlm_data[num].amps       	= (uint16_t)((tlm_buffer[num][3]<<8)|tlm_buffer[num][4]); // deciamps [dA] 10^-1 A (0.01A)
+			tlm_data[num].ampHours   	= (uint16_t)((tlm_buffer[num][5]<<8)|tlm_buffer[num][6]); // [mAh] (0.001Ah)
+			tlm_data[num].rpm        	= (uint16_t)((tlm_buffer[num][7]<<8)|tlm_buffer[num][8]); // [eRPM * 100] (100eRPM)
+
+        	return &tlm_data[num];
+      	}
+    }
+
+    return NULL;
+}
+
+
 void DShot::armMotor( uint8_t num ){
     cmd[num] = DSHOT_CMD_MOTOR_STOP;
     tlm[num] = 0;
@@ -345,48 +373,16 @@ void DShot::requestConfig( uint8_t num, Stream * port ){
     }
 }
 
-/* 
-DShot::parse_tlm(){
-
-    for (uint8_t n = 0; n < output_count; n++)
-    {
-        // Process all available telemetry packets
-        while ( read_packet( i ) )  {
-
-        	uint8_t valid = get_crc8(buf, 9); 
-      
-            if(valid == buf[9]){
-
-                // Telemetry success, CRC was valid 
-                tlm.temp       	= (float)(buf[0]);
-                tlm.voltage    	= (float)((buf[1]<<8)|buf[2]) / 100.0;
-                tlm.amps       	= (float)((buf[3]<<8)|buf[4]) / 100.0;
-                tlm.ampHours   	= (float)((buf[5]<<8)|buf[6]);
-                tlm.rpm        	= (float)((buf[7]<<8)|buf[8]) * 100.0 / 7.0; 
-                tlm.timestamp 	= micros();
-                return true;
-            }
-        }
-    }
+uint8_t DShot::update_crc8(uint8_t crc, uint8_t crcSeed){
+	uint8_t crc_u, i;
+	crc_u = crc;
+	crc_u ^= crcSeed;
+	for ( i=0; i<8; i++) crc_u = ( crc_u & 0x80 ) ? 0x7 ^ ( crc_u << 1 ) : ( crc_u << 1 );
+	return (crc_u);
 }
 
-DShot::read_packet( uint8_t num ){
-    // Read all bytes in rx buffer up to packet length
-    while ( ( ESCCMD_serial[i]->available( ) ) &&  ( buffer_idx[i] < ESCCMD_TLM_LENGTH ) ) { 
-        serial_ret = ESCCMD_serial[i]->read( );
-        
-        if ( serial_ret >= 0 )  {
-            ESCCMD_bufferTlm[i][buffer_idx[i]] = (uint8_t)serial_ret;
-            buffer_idx[i]++;
-        }
-    }
-
-    // Check if a complete packet has arrived
-    if ( buffer_idx[i] == ESCCMD_TLM_LENGTH  )  {
-        // Reset byte index in packet buffer
-        buffer_idx[i] = 0;
-
-        // Return pointer to buffer
-        return ESCCMD_bufferTlm[i];
-    }
-}*/
+uint8_t DShot::get_crc8(uint8_t *buf, uint8_t bufLen){
+	uint8_t crc = 0, i;
+	for( i=0; i<bufLen; i++) crc = update_crc8(buf[i], crc);
+	return (crc);
+}

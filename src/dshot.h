@@ -51,6 +51,19 @@ typedef enum {
     DSHOT_CMD_MAX = 47
 } DSHOT_command;
 
+typedef struct {
+    uint8_t temp; 
+    uint16_t voltage;
+    uint16_t amps;
+    uint16_t ampHours;
+    uint16_t rpm;
+} DSHOT_telemetry;
+
+enum{
+    DSHOT_TLM_NONE = 0,
+    DSHOT_TLM_REQUEST,
+};
+
 #define DSHOT_ARMING_REPS       50 
 #define DSHOT_SETTING_REPS      10 
 #define DSHOT_COMMAND_DELAY_US 1000
@@ -64,14 +77,8 @@ typedef enum {
 class DShot
 {
 public:
-
-	struct Telemetry{
-		float temp; 
-		float voltage;
-		float amps;
-		float ampHours;
-		float rpm;
-	} tlm_data[DSHOT_MAX_OUTPUT];
+    
+    DSHOT_telemetry tlm_data[DSHOT_MAX_OUTPUT];
 
 	DShot( uint8_t count );
 
@@ -89,6 +96,8 @@ public:
 
     void requestConfig( uint8_t num, Stream * port );
 
+    DSHOT_telemetry *readTelemetry( uint8_t num, Stream * port );
+
 private:
 
     // Number of configured outputs
@@ -102,6 +111,10 @@ private:
     // Output buffers to temporary hold command and telemetry requests
     uint8_t tlm[DSHOT_MAX_OUTPUT];
     uint16_t cmd[DSHOT_MAX_OUTPUT];
+
+    // Telemetry CRC
+	uint8_t update_crc8(uint8_t crc, uint8_t crcSeed);
+	uint8_t get_crc8(uint8_t * buf, uint8_t bufLen);
 
 };
 

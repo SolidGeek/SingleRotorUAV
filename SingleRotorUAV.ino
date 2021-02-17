@@ -2,10 +2,16 @@
 
 // Prepare two DSHOT outputs
 #define DSHOT_OUTPUTS 2
+#define DSHOT_MOTOR_POLES 14
+#define DSHOT_TLM_INTERVAL 500 // Milisecond (ms)
+
 DShot ESC(DSHOT_OUTPUTS); 
 
-uint16_t throttle = 200;
+uint16_t throttle = 450;
 uint8_t tlm = 0;
+uint64_t tlm_timer = 0;
+
+DSHOT_telemetry * data; 
 
 void setup() {
   Serial.begin(115200);
@@ -35,9 +41,24 @@ void setup() {
 }
 
 void loop() {
+
+  if( millis() - tlm_timer > DSHOT_TLM_INTERVAL ){
+    tlm = DSHOT_TLM_REQUEST;
+  }else{
+    tlm = DSHOT_TLM_NONE;
+  }
   
   ESC.write(0, throttle, tlm);
   ESC.write(1, throttle, tlm);
+
+  if( ESC.readTelemetry( 0, &Serial1 ) ){
+    Serial.print("Voltage: ");
+    Serial.print(ESC.tlm_data[0].voltage );  
+    Serial.print(" - ");
+    Serial.print("Amps: ");
+    Serial.println(ESC.tlm_data[0].ampHours ); 
+  }
+  
   delay(10);
 
 }
