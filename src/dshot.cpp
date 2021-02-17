@@ -225,8 +225,8 @@ DSHOT_telemetry *DShot::readTelemetry( uint8_t num, Stream * port ){
 			tlm_data[num].temp       	= (uint8_t)(tlm_buffer[num][0]); // Degress Celcius
 			tlm_data[num].voltage    	= (uint16_t)((tlm_buffer[num][1]<<8)|tlm_buffer[num][2]); // decivolt [dV] 10^-1 V (0.01V)
 			tlm_data[num].amps       	= (uint16_t)((tlm_buffer[num][3]<<8)|tlm_buffer[num][4]); // deciamps [dA] 10^-1 A (0.01A)
-			tlm_data[num].ampHours   	= (uint16_t)((tlm_buffer[num][5]<<8)|tlm_buffer[num][6]); // [mAh] (0.001Ah)
-			tlm_data[num].rpm        	= (uint16_t)((tlm_buffer[num][7]<<8)|tlm_buffer[num][8]); // [eRPM * 100] (100eRPM)
+			tlm_data[num].ampHours   	= (uint16_t)((tlm_buffer[num][5]<<8)|tlm_buffer[num][6]); // milliamphours [mAh] (0.001Ah)
+			tlm_data[num].rpm        	= (uint16_t)((tlm_buffer[num][7]<<8)|tlm_buffer[num][8]); // electrical rpm [eRPM * 100] (100eRPM)
 
         	return &tlm_data[num];
       	}
@@ -235,6 +235,21 @@ DSHOT_telemetry *DShot::readTelemetry( uint8_t num, Stream * port ){
     return NULL;
 }
 
+float DShot::getRPM( uint8_t num, uint8_t motor_poles ){
+    return (float)(tlm_data[num].rpm * 100 * 2)/(float)motor_poles;
+}
+
+float DShot::getAmps( uint8_t num ){
+    return (float)(tlm_data[num].amps)/100;
+}
+
+float DShot::getVoltage( uint8_t num ){
+    return (float)(tlm_data[num].voltage)/100;
+}
+
+uint8_t DShot::getTemp( uint8_t num ){
+    return (tlm_data[num].temp);
+}
 
 void DShot::armMotor( uint8_t num ){
     cmd[num] = DSHOT_CMD_MOTOR_STOP;

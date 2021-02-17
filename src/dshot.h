@@ -64,6 +64,13 @@ enum{
     DSHOT_TLM_REQUEST,
 };
 
+enum{
+    DSHOT_PORT_1 = 0,
+    DSHOT_PORT_2,
+    DSHOT_PORT_3,
+    DSHOT_PORT_4,
+};
+
 #define DSHOT_ARMING_REPS       50 
 #define DSHOT_SETTING_REPS      10 
 #define DSHOT_COMMAND_DELAY_US 1000
@@ -97,6 +104,11 @@ public:
     void requestConfig( uint8_t num, Stream * port );
 
     DSHOT_telemetry *readTelemetry( uint8_t num, Stream * port );
+
+    float getRPM( uint8_t num, uint8_t motor_poles );
+    float getAmps( uint8_t num ); 
+    uint8_t getTemp( uint8_t num );
+    float getVoltage( uint8_t num );
 
 private:
 
