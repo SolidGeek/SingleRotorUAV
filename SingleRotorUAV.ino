@@ -1,9 +1,11 @@
+#include "src/config.h"
 #include "src/dshot.h"
+
 
 #define MOTOR_POLES 14    // Number of poles in connected motor
 #define TLM_INTERVAL 5000  // Interval in us
 
-/* Prepare one DSHOT outputs */
+/* Prepare two DSHOT outputs */
 DShot ESC(2); 
 
 uint16_t throttle = 47;
@@ -41,7 +43,7 @@ int step_measure_time = 5000;
 
 void loop() {
   /* Request telemetry data each TLM_INTERVAL */
-  if( micros() - tlm_timer > TLM_INTERVAL ){
+  /* if( micros() - tlm_timer > TLM_INTERVAL ){
     tlm = DSHOT_TLM_REQUEST;
     tlm_timer = micros();
 
@@ -54,14 +56,28 @@ void loop() {
     }
   }else{
     tlm = DSHOT_TLM_NONE;
-  }
+  } */
 
   /* Write DSHOT signal */
   ESC.write(DSHOT_PORT_1, throttle, tlm);
   ESC.write(DSHOT_PORT_2, throttle, tlm);
 
+  
+  uint16_t value = pulseIn( receiver_pins[1], HIGH);
+  throttle = map(value, 920, 1920, 0, 200) + 47;
+
+  Serial.println(throttle);
+  
+  
+  // uint16_t roll = pulseIn( receiver_pins[0], HIGH);
+  // uint16_t pitch = pulseIn( receiver_pins[2], HIGH);
+
+  delay(10);
+
+  
+
   /* Read DSHOT telemetry from DSHOT_PORT_1 */
-  ESC.readTelemetry( DSHOT_PORT_1, &Serial1) ;
+  /* ESC.readTelemetry( DSHOT_PORT_1, &Serial1) ;
   ESC.readTelemetry( DSHOT_PORT_2, &Serial2) ;
   
   while( Serial.available() ) {
@@ -87,6 +103,6 @@ void loop() {
     } 
   }
   
-  delay(10);
+  delay(10);*/
 
 }
