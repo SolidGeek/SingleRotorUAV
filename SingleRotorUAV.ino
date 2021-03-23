@@ -10,6 +10,11 @@ BNO080 IMU;
 /* Prepare two DSHOT outputs */
 DShot ESC(2);
 
+uint16_t report_ID = 0;
+float gx, gy, gz = 0;
+float roll, pitch, yaw = 0;
+uint8_t accuracy; 
+
 void setup() {
   Serial.begin(115200);
 
@@ -25,12 +30,6 @@ void setup() {
   // configESCs();
   
 }
-
-
-uint16_t report_ID = 0;
-float gx, gy, gz = 0;
-float roll, pitch, yaw = 0;
-uint8_t accuracy; 
 
 void loop() {
   
