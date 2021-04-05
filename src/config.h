@@ -13,6 +13,8 @@
 #define IMU_INT_PIN 21
 #define IMU_RST_PIN 20
 
+#define CAM_CS_PIN 6
+
 uint16_t servo_pins[] = {2,3,4,5};
 uint16_t receiver_pins[] = {18, 19, 23, 1};
 
