@@ -1,5 +1,5 @@
 #include "src/config.h"
-#include "src/dshot.h"
+// #include "src/dshot.h"
 #include "src/BNO080.h" // IMU Library
 #include "src/PMW3901.h"
 #include <SPI.h>
@@ -8,34 +8,53 @@
 BNO080 IMU;
 
 /* Prepare two DSHOT outputs */
-DShot ESC(2);
+// DShot ESC(2);
 
 PMW3901 flow(CAM_CS_PIN);
 
-uint16_t report_ID = 0;
+/* uint16_t report_ID = 0;
 float gx, gy, gz = 0;
 float roll, pitch, yaw = 0;
-uint8_t accuracy; 
+uint8_t accuracy; */
 
 void setup() {
+
   Serial.begin(115200);
+  
+  pinMode( CAM_CS_PIN, OUTPUT );
+  digitalWrite(CAM_CS_PIN, HIGH);
 
   // IMPORTANT TO ENABLE FLOW BEFORE IMU, OTHERWISE IMU SETUP FAILS (FLOW TALKS BACK)
   if (!flow.begin()) {
     Serial.println("Initialization of the flow sensor failed");
     // while(1) { }
   }
-  //digitalWrite(CAM_CS_PIN, LOW);
-  delay(1000);
 
-  /* if(IMU.beginSPI(IMU_CS_PIN, IMU_WAK_PIN, IMU_INT_PIN, IMU_RST_PIN) == false){
+  digitalWrite(CAM_CS_PIN, LOW);
+  delay(5);
+  digitalWrite(CAM_CS_PIN, HIGH);
+  
+  delay(1000);
+  
+  IMU.enableDebugging(Serial);
+  if(IMU.beginSPI(IMU_CS_PIN, IMU_WAK_PIN, IMU_INT_PIN, IMU_RST_PIN, 1000000) == false){
     Serial.println(F("BNO080 over SPI not detected."));
     while(1);
-  } */
+  } 
+
+  
+
+  
+
+   
+
+  
+
+
 
   
   
-  flow.setLed(HIGH);
+  // flow.setLed(HIGH);
 
   /* Enable continous stream of data from IMU */
   // IMU.enableGyro( 3 );  // 2.5ms / 400hz
@@ -45,17 +64,16 @@ void setup() {
   
 }
 
-int16_t deltaX,deltaY;
 
 void loop() {
 
-  flow.readMotionCount(&deltaX, &deltaY);
+  /*  flow.readMotionCount(&deltaX, &deltaY);
 
   Serial.print(deltaX);
   Serial.print(",");
   Serial.println(deltaY);
 
-  delay(5);
+  delay(5); */
   
   /* if (report_ID = IMU.getReadings())
   {
@@ -77,22 +95,24 @@ void loop() {
 
 }
 
+/* 
 void readRCReceiver( void ) {
   uint16_t roll = pulseIn( receiver_pins[0], HIGH);
   uint16_t pitch = pulseIn( receiver_pins[2], HIGH);
   uint16_t temp = pulseIn( receiver_pins[1], HIGH);
   uint16_t throttle = map(temp, 920, 1920, 0, 200) + 47;
-}
+}*/
 
+/* 
 void configESCs( void ) {
 
   Serial1.begin(115200);
   Serial2.begin(115200);
 
-  /* Configure the DSHOT outputs */
+  // Configure the DSHOT outputs
   ESC.setup();
 
-  /* Config the ESCs */
+  // Config the ESCs
   ESC.setConfig( DSHOT_PORT_1, DSHOT_CMD_SPIN_DIRECTION_2 );
   ESC.setConfig( DSHOT_PORT_1, DSHOT_CMD_3D_MODE_OFF );
 
@@ -101,6 +121,6 @@ void configESCs( void ) {
 
   delay(1000);
 
-  /* Arm all DSHOT ports / ESCs */
+  // Arm all DSHOT ports / ESCs
   ESC.armMotors();
-}
+}*/
