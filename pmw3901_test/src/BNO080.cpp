@@ -105,14 +105,9 @@ boolean BNO080::beginSPI(uint8_t user_CSPin, uint8_t user_WAKPin, uint8_t user_I
 	digitalWrite(_rst, LOW);   //Reset BNO080
 	delay(2);				   //Min length not specified in datasheet?
 	digitalWrite(_rst, HIGH);  //Bring out of reset
-	
 
 	//Wait for first assertion of INT before using WAK pin. Can take ~104ms
-	if( waitForSPI() ){
-		_debugPort->println(F("-- First INT received"));
-		// digitalWrite(_wake, LOW);
-	}
-
+	waitForSPI();
 
 	//if(wakeBNO080() == false) //Bring IC out of sleep after reset
 	//  Serial.println("BNO080 did not wake up");
@@ -123,10 +118,7 @@ boolean BNO080::beginSPI(uint8_t user_CSPin, uint8_t user_WAKPin, uint8_t user_I
 	//host. It must not send any other data until this step is complete.
 	//When BNO080 first boots it broadcasts big startup packet
 	//Read it and dump it
-	if( waitForSPI() ){
-		_debugPort->println(F("-- Second INT received"));
-		
-	} //Wait for assertion of INT before reading advert message.
+	waitForSPI(); //Wait for assertion of INT before reading advert message.
 	receivePacket();
 
 	//The BNO080 will then transmit an unsolicited Initialize Response (see 6.4.5.2)

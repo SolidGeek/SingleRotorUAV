@@ -15,46 +15,44 @@ float gx, gy, gz = 0;
 float roll, pitch, yaw = 0;
 uint8_t accuracy; 
 
+int16_t deltaX; int16_t deltaY;
+
 void setup() {
 
   Serial.begin(115200);
-  Serial.println("Ready");
 
-  delay(1000);
-
+  // Disable all SPI devices 
   pinMode( IMU_CS_PIN, OUTPUT );
   pinMode( FLOW_CS_PIN, OUTPUT );
   digitalWrite( IMU_CS_PIN, HIGH );
   digitalWrite( FLOW_CS_PIN, HIGH );
-
   delay(100);
 
-  // IMU.enableDebugging(Serial);
-  if(IMU.beginSPI(IMU_CS_PIN, IMU_WAK_PIN, IMU_INT_PIN, IMU_RST_PIN) == false){
-    Serial.println("BNO080 over SPI not detected.");
+  // Initiate flow sensor
+  if (FLOW.begin()) {
+    FLOW.setLed(HIGH);
+  }else{
+    Serial.println("FLOW not detected.");
   }
-  
-  if (!FLOW.begin()) {
-    Serial.println("Initialization of the flow sensor failed");
-  }
-  
+  delay(100);
 
-  IMU.enableGyro( 3 );  // 2.5ms / 400hz
-  IMU.enableRotationVector(5); // 5ms / 200Hz
+  // Initiate IMU sensor
+  if(IMU.beginSPI(IMU_CS_PIN, IMU_WAK_PIN, IMU_INT_PIN, IMU_RST_PIN)){
+    IMU.enableGyro( 3 );  // 2.5ms / 400hz
+    IMU.enableRotationVector(5); // 5ms / 200Hz
+  }else{
+    Serial.println("IMU not detected.");
+  }
 
   Serial.println("Setup done");
-  
 }
 
-int16_t deltaX; int16_t deltaY;
 
 void loop() {
 
-  Serial.println("LOOP");
-
   FLOW.readMotionCount(&deltaX, &deltaY);
 
-  Serial.println("FLOW");
+  Serial.print("FLOW: ");
   Serial.print(deltaX);
   Serial.print(",");
   Serial.println(deltaY);
@@ -71,7 +69,7 @@ void loop() {
     // Raw Gyro data
     if( report_ID == SENSOR_REPORTID_GYROSCOPE ) {
       IMU.getGyro(gx, gy, gz, accuracy);
-      Serial.println("GYRO");
+      Serial.print("GYRO: ");
       Serial.print(gx);
       Serial.print(",");
       Serial.println(gy);
