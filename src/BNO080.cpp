@@ -24,6 +24,14 @@
 
 #include "BNO080.h"
 
+
+BNO080::BNO080(uint8_t user_CSPin, uint8_t user_WAKPin, uint8_t user_INTPin, uint8_t user_RSTPin ){
+    _cs = user_CSPin;
+	_wake = user_WAKPin;
+	_int = user_INTPin;
+	_rst = user_RSTPin;
+}
+
 //Attempt communication with the device
 //Return true if we got a 'Polo' back from Marco
 boolean BNO080::begin(uint8_t deviceAddress, TwoWire &wirePort, uint8_t intPin)
@@ -78,7 +86,7 @@ boolean BNO080::begin(uint8_t deviceAddress, TwoWire &wirePort, uint8_t intPin)
 	return (false); //Something went wrong
 }
 
-boolean BNO080::beginSPI(uint8_t user_CSPin, uint8_t user_WAKPin, uint8_t user_INTPin, uint8_t user_RSTPin, uint32_t spiPortSpeed, SPIClass &spiPort)
+boolean BNO080::beginSPI(uint32_t spiPortSpeed, SPIClass &spiPort)
 {
 	_i2cPort = NULL; //This null tells the send/receive functions to use SPI
 
@@ -87,11 +95,6 @@ boolean BNO080::beginSPI(uint8_t user_CSPin, uint8_t user_WAKPin, uint8_t user_I
 	_spiPortSpeed = spiPortSpeed;
 	if (_spiPortSpeed > 3000000)
 		_spiPortSpeed = 3000000; //BNO080 max is 3MHz
-
-	_cs = user_CSPin;
-	_wake = user_WAKPin;
-	_int = user_INTPin;
-	_rst = user_RSTPin;
 
 	pinMode(_cs, OUTPUT);
 	pinMode(_wake, OUTPUT);
@@ -105,14 +108,9 @@ boolean BNO080::beginSPI(uint8_t user_CSPin, uint8_t user_WAKPin, uint8_t user_I
 	digitalWrite(_rst, LOW);   //Reset BNO080
 	delay(2);				   //Min length not specified in datasheet?
 	digitalWrite(_rst, HIGH);  //Bring out of reset
-	
 
 	//Wait for first assertion of INT before using WAK pin. Can take ~104ms
-	if( waitForSPI() ){
-		_debugPort->println(F("-- First INT received"));
-		// digitalWrite(_wake, LOW);
-	}
-
+	waitForSPI();
 
 	//if(wakeBNO080() == false) //Bring IC out of sleep after reset
 	//  Serial.println("BNO080 did not wake up");
@@ -123,10 +121,7 @@ boolean BNO080::beginSPI(uint8_t user_CSPin, uint8_t user_WAKPin, uint8_t user_I
 	//host. It must not send any other data until this step is complete.
 	//When BNO080 first boots it broadcasts big startup packet
 	//Read it and dump it
-	if( waitForSPI() ){
-		_debugPort->println(F("-- Second INT received"));
-		
-	} //Wait for assertion of INT before reading advert message.
+	waitForSPI(); //Wait for assertion of INT before reading advert message.
 	receivePacket();
 
 	//The BNO080 will then transmit an unsolicited Initialize Response (see 6.4.5.2)

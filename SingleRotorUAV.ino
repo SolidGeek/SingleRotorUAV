@@ -1,71 +1,56 @@
-#include "src/config.h"
+#include "src/sensors.h"
+#include "src/control.h"
 // #include "src/dshot.h"
-#include "src/BNO080.h" // IMU Library
-#include "src/PMW3901.h"
-#include <SPI.h>
-#include <Servo.h>
 
-BNO080 IMU;
-
-/* Prepare two DSHOT outputs */
-// DShot ESC(2);
-
-PMW3901 flow(CAM_CS_PIN);
-
-/* uint16_t report_ID = 0;
-float gx, gy, gz = 0;
-float roll, pitch, yaw = 0;
-uint8_t accuracy; */
+Sensors sensors;
+Control control;
 
 void setup() {
+    Serial.begin(115200);
+    Serial.println("Welcome aboard the AAU Starliner.");
+    Serial.println("Systems booting...");
+    
+    sensors.init();
+    control.init();
 
-  Serial.begin(115200);
-  
-  pinMode( CAM_CS_PIN, OUTPUT );
-  digitalWrite(CAM_CS_PIN, HIGH);
-
-  // IMPORTANT TO ENABLE FLOW BEFORE IMU, OTHERWISE IMU SETUP FAILS (FLOW TALKS BACK)
-  if (!flow.begin()) {
-    Serial.println("Initialization of the flow sensor failed");
-    // while(1) { }
-  }
-
-  digitalWrite(CAM_CS_PIN, LOW);
-  delay(5);
-  digitalWrite(CAM_CS_PIN, HIGH);
-  
-  delay(1000);
-  
-  IMU.enableDebugging(Serial);
-  if(IMU.beginSPI(IMU_CS_PIN, IMU_WAK_PIN, IMU_INT_PIN, IMU_RST_PIN, 1000000) == false){
-    Serial.println(F("BNO080 over SPI not detected."));
-    while(1);
-  } 
-
-  
-
-  
-
-   
-
-  
-
-
-
-  
-  
-  // flow.setLed(HIGH);
-
-  /* Enable continous stream of data from IMU */
-  // IMU.enableGyro( 3 );  // 2.5ms / 400hz
-  // IMU.enableRotationVector(5); // 5ms / 200Hz
-  
-  // configESCs();
-  
+    Serial.println("All systems nominal");
+    // configESCs();
 }
 
+// Controller parameters (simple P-control)
+float sp_roll = 0;
+float sp_pitch = 0;
+
+float err_roll = 0;
+float err_pitch = 0;
+
+float out_roll = 0;
+float out_pitch = 0;
+
+// Proportional gain
+float Kp = 0.5;
 
 void loop() {
+
+    sensors.sample_imu();
+    sensors.sample_lidar();
+  
+    err_roll = sp_roll - sensors.data.roll * (180/3.14);
+    err_pitch = sp_pitch - sensors.data.pitch * (180/3.14);
+
+    out_roll = Kp * err_roll;
+    out_pitch = Kp * err_pitch;
+
+    Serial.print(err_pitch);
+    Serial.print(" ");
+    Serial.println(err_roll);
+
+    control.control_servo(0, out_pitch);
+    control.control_servo(1, -out_roll);
+    control.control_servo(2, -out_pitch);
+    control.control_servo(3, out_roll);
+
+    delay(5);
 
   /*  flow.readMotionCount(&deltaX, &deltaY);
 
