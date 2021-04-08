@@ -30,27 +30,29 @@ float out_pitch = 0;
 // Proportional gain
 float Kp = 0.5;
 
+uint32_t control_timer = 0;
+
 void loop() {
 
     sensors.sample_imu();
-    sensors.sample_lidar();
+    // sensors.sample_lidar();
+
+    if( micros() - control_timer >= 5000 ){
+      control.attitude( sensors.data.roll, sensors.data.pitch, 0, sensors.data.gx, sensors.data.gy, 0 );
+    }
+    // Serial.println( sensors.data.gx * (180/3.14));
   
-    err_roll = sp_roll - sensors.data.roll * (180/3.14);
+    /* err_roll = sp_roll - sensors.data.roll * (180/3.14);
     err_pitch = sp_pitch - sensors.data.pitch * (180/3.14);
 
     out_roll = Kp * err_roll;
     out_pitch = Kp * err_pitch;
 
-    Serial.print(err_pitch);
-    Serial.print(" ");
-    Serial.println(err_roll);
-
     control.control_servo(0, out_pitch);
     control.control_servo(1, -out_roll);
     control.control_servo(2, -out_pitch);
-    control.control_servo(3, out_roll);
-
-    delay(5);
+    control.control_servo(3, out_roll); */
+    
 
   /*  flow.readMotionCount(&deltaX, &deltaY);
 

@@ -31,3 +31,26 @@ void Control::control_servo( uint8_t index, float angle )
     // Write servo signal
     servos[index].writeMicroseconds(timing);
 }
+
+void Control::attitude( float roll, float pitch, float yaw, float gx, float gy, float gz ){
+
+    // Load states into state-vector
+    X << roll, pitch, yaw, gx, gy, gz;
+
+    U = -K * X;
+    
+    Serial.print(roll);
+    Serial.print(",");
+    Serial.print(pitch);
+    Serial.print(",");
+    Serial.print(gx);
+    Serial.print(",");
+    Serial.println(gy);
+
+
+    control_servo(1, U(0) );
+    control_servo(2, U(1) );
+    control_servo(3, -U(2) );
+    control_servo(0, -U(3) ); 
+
+}
