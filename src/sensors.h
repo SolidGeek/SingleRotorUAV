@@ -2,6 +2,7 @@
 #define _SRUAV_SENSORS_H
 
 #include "config.h"
+#include "math.h"
 #include <Wire.h>
 #include <SPI.h>
 #include "BNO080.h"     // IMU 
@@ -12,6 +13,8 @@
 #define STATUS_READY 0x01
 #define STATUS_FAILED_SETUP 0x02
 #define STATUS_NO_RESPONSE 0x03
+
+#define RAD_TO_DEG 180.0f/M_PI
 
 class Sensors
 {
@@ -53,7 +56,8 @@ private:
     PMW3901 * flow; 
     VL53L1X * lidar; 
 
-    
+    // Low pass filter to filter sensor data
+    float LPF( float new_sample, float old_sample, float alpha );
 
 };
 

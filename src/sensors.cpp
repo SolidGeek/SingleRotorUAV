@@ -67,16 +67,16 @@ void Sensors::sample_imu(){
     while ( report_ID = imu->getReadings() ) {
         // Read Attitude estimate
         if( report_ID == SENSOR_REPORTID_ROTATION_VECTOR ){
-            data.roll   = imu->getRoll();
-            data.pitch  = imu->getPitch();
-            data.yaw    = imu->getYaw();
+            data.roll   = imu->getRoll() * RAD_TO_DEG;
+            data.pitch  = imu->getPitch() * RAD_TO_DEG;
+            data.yaw    = imu->getYaw() * RAD_TO_DEG;
         }
 
         // Read Raw Gyro data
         if( report_ID == SENSOR_REPORTID_GYROSCOPE ) {
-            data.gx = imu->getGyroX();
-            data.gy = imu->getGyroY();
-            data.gz = imu->getGyroZ();
+            data.gx = LPF( imu->getGyroX() * RAD_TO_DEG, data.gx, 0.4 );
+            data.gy = LPF( imu->getGyroY() * RAD_TO_DEG, data.gy, 0.4 );
+            data.gz = LPF( imu->getGyroZ() * RAD_TO_DEG, data.gz, 0.4 );
         }
     }
 }
@@ -95,4 +95,8 @@ void Sensors::sample_lidar(){
 
     }
 
+}
+
+float Sensors::LPF( float new_sample, float old_sample, float alpha ){
+    return ((alpha * new_sample) + (1.0-alpha) * old_sample);  
 }

@@ -69,13 +69,13 @@ void Control::control_attitude( float roll, float pitch, float yaw, float gx, fl
 
     U = -K * X;
     
-    Serial.print(roll);
+    /* Serial.print(roll);
     Serial.print(",");
     Serial.print(pitch);
     Serial.print(",");
     Serial.print(gx);
     Serial.print(",");
-    Serial.println(gy); 
+    Serial.println(gy); */
 
 
     set_servo(1, U(0) );

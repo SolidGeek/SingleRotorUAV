@@ -41,7 +41,14 @@ void loop() {
 
     if( micros() - control_timer >= 5000 ){
       control_timer = micros();
-      control.control_attitude( sensors.data.roll, sensors.data.pitch, 0, sensors.data.gx, sensors.data.gy, 0 );
+
+
+      Serial.print(sensors.data.roll);
+      Serial.print(",");
+      Serial.println(sensors.data.gx);
+      
+      
+      // control.control_attitude( sensors.data.roll, sensors.data.pitch, 0, sensors.data.gx, sensors.data.gy, 0 );
 
       uint16_t temp = constrain(rc_input1, 930, 1910);
       throttle = map(temp, 930, 1910, MOTOR_MIN_DSHOT, MOTOR_MAX_DSHOT);
