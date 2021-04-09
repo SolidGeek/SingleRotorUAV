@@ -9,6 +9,9 @@
 #define SERVO_MIN_TIMING 900
 #define SERVO_MAX_TIMING 2100
 
+#define MOTOR_MIN_DSHOT 0
+#define MOTOR_MAX_DSHOT 1500 // No more is needed to lift aircraft.
+
 using namespace BLA;
 
 class Control
@@ -19,17 +22,23 @@ public:
 
     void init();
 
-    void control_motor( uint8_t index, float dshot );
+    void set_motor( uint8_t index, uint16_t throttle );
 
-    void control_servo( uint8_t index, float angle );
+    void set_servo( uint8_t index, float angle );
 
-    void attitude( float roll, float pitch, float yaw, float gx, float gy, float gz );
+    void control_attitude( float roll, float pitch, float yaw, float gx, float gy, float gz );
+
+    void get_rc_signals( void );
+
+    uint16_t get_sp_throttle( void );
 
 private:
 
     Servo* servos;
+    
 
     static const uint16_t servo_pins[];
+    static const uint16_t receiver_pins[];
 
     // LQR optimal gain for attitude controller
     Matrix<4,6> K = {    3.5073,   -0.0000,    0.4973,    2.2080,    0.0000,    0.4798,
@@ -42,6 +51,12 @@ private:
 
     // Actuation vector / output
     Matrix<4,1> U = {0,0,0,0};
+
+    // Setpoints for attitude controller
+    Matrix<6,1> SP_rot = {0,0,0,0,0,0};
+
+    // Throttle setpoint (controlled via RC controller)
+    uint16_t SP_throttle = 0;
 
 };
 

@@ -1,36 +1,38 @@
+
 #include "src/sensors.h"
 #include "src/control.h"
-// #include "src/dshot.h"
+#include "src/dshot.h"
 
 Sensors sensors;
 Control control;
+
+uint32_t control_timer = 0;
+uint16_t throttle = 0;
+
+uint8_t rc_input1_pin = 19;
+uint16_t rc_input1;
+elapsedMicros rc_input1_timer;
+
+void rc_input1_interrupt(){
+   if( digitalReadFast(rc_input1_pin) == HIGH )
+      rc_input1_timer = 0;
+   else 
+      rc_input1 = rc_input1_timer;
+}
 
 void setup() {
     Serial.begin(115200);
     Serial.println("Welcome aboard the AAU Starliner.");
     Serial.println("Systems booting...");
-    
-    sensors.init();
+
+    attachInterrupt( rc_input1_pin, rc_input1_interrupt, CHANGE );
+
     control.init();
+    // Important to init this last, otherwise IMU's buffer overflow and goes into error state....
+    sensors.init();
 
     Serial.println("All systems nominal");
-    // configESCs();
 }
-
-// Controller parameters (simple P-control)
-float sp_roll = 0;
-float sp_pitch = 0;
-
-float err_roll = 0;
-float err_pitch = 0;
-
-float out_roll = 0;
-float out_pitch = 0;
-
-// Proportional gain
-float Kp = 0.5;
-
-uint32_t control_timer = 0;
 
 void loop() {
 
@@ -38,47 +40,17 @@ void loop() {
     // sensors.sample_lidar();
 
     if( micros() - control_timer >= 5000 ){
-      control.attitude( sensors.data.roll, sensors.data.pitch, 0, sensors.data.gx, sensors.data.gy, 0 );
-    }
-    // Serial.println( sensors.data.gx * (180/3.14));
-  
-    /* err_roll = sp_roll - sensors.data.roll * (180/3.14);
-    err_pitch = sp_pitch - sensors.data.pitch * (180/3.14);
+      control_timer = micros();
+      control.control_attitude( sensors.data.roll, sensors.data.pitch, 0, sensors.data.gx, sensors.data.gy, 0 );
 
-    out_roll = Kp * err_roll;
-    out_pitch = Kp * err_pitch;
+      uint16_t temp = constrain(rc_input1, 930, 1910);
+      throttle = map(temp, 930, 1910, MOTOR_MIN_DSHOT, MOTOR_MAX_DSHOT);
 
-    control.control_servo(0, out_pitch);
-    control.control_servo(1, -out_roll);
-    control.control_servo(2, -out_pitch);
-    control.control_servo(3, out_roll); */
-    
-
-  /*  flow.readMotionCount(&deltaX, &deltaY);
-
-  Serial.print(deltaX);
-  Serial.print(",");
-  Serial.println(deltaY);
-
-  delay(5); */
-  
-  /* if (report_ID = IMU.getReadings())
-  {
-    // Attitude estimate
-    if( report_ID == SENSOR_REPORTID_ROTATION_VECTOR ){
-      roll = IMU.getRoll();
-      pitch = IMU.getPitch();
-      yaw = IMU.getYaw();
+      control.set_motor( DSHOT_PORT_1, throttle );
+      control.set_motor( DSHOT_PORT_2, throttle );
     }
 
-    // Raw Gyro data
-    if( report_ID == SENSOR_REPORTID_GYROSCOPE ) {
-      IMU.getGyro(gx, gy, gz, accuracy);
-      Serial.print(gx);
-      Serial.print(",");
-      Serial.println(gy);
-    }
-  }*/
+  /*  flow.readMotionCount(&deltaX, &deltaY); */
 
 }
 
@@ -88,26 +60,4 @@ void readRCReceiver( void ) {
   uint16_t pitch = pulseIn( receiver_pins[2], HIGH);
   uint16_t temp = pulseIn( receiver_pins[1], HIGH);
   uint16_t throttle = map(temp, 920, 1920, 0, 200) + 47;
-}*/
-
-/* 
-void configESCs( void ) {
-
-  Serial1.begin(115200);
-  Serial2.begin(115200);
-
-  // Configure the DSHOT outputs
-  ESC.setup();
-
-  // Config the ESCs
-  ESC.setConfig( DSHOT_PORT_1, DSHOT_CMD_SPIN_DIRECTION_2 );
-  ESC.setConfig( DSHOT_PORT_1, DSHOT_CMD_3D_MODE_OFF );
-
-  ESC.setConfig( DSHOT_PORT_2, DSHOT_CMD_SPIN_DIRECTION_1 );
-  ESC.setConfig( DSHOT_PORT_2, DSHOT_CMD_3D_MODE_OFF );
-
-  delay(1000);
-
-  // Arm all DSHOT ports / ESCs
-  ESC.armMotors();
 }*/
