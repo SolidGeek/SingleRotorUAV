@@ -1,12 +1,14 @@
 #ifndef _SRUAV_CONTROL_H
 #define _SRUAV_CONTROL_H
 
-#include "config.h"
+#include "constants.h"
+#include "dshot.h"
 #include <BasicLinearAlgebra.h>
 #include <Servo.h>
-#include "dshot.h"
+
 
 #define SERVO_MIN_TIMING 900
+#define SERVO_MID_TIMING 1500
 #define SERVO_MAX_TIMING 2100
 
 #define MOTOR_MIN_DSHOT 0
@@ -22,15 +24,21 @@ public:
 
     void init();
 
-    void set_motor( uint8_t index, uint16_t throttle );
+    void write_motor( uint8_t index, uint16_t throttle );
 
-    void set_servo( uint8_t index, float angle );
+    void write_servo( uint8_t index, float angle );
+
+    void write_servo_ms( uint8_t index, uint16_t ms );
 
     void control_attitude( float roll, float pitch, float yaw, float gx, float gy, float gz );
 
     void get_rc_signals( void );
 
     uint16_t get_sp_throttle( void );
+
+    void servo_calibration( int16_t * servo_offset );
+
+    void set_servo_offsets( int16_t * servo_offset );
 
 private:
 
@@ -41,10 +49,10 @@ private:
     static const uint16_t receiver_pins[];
 
     // LQR optimal gain for attitude controller
-    Matrix<4,6> K = {   0.3527,    0.0000,    0.2491,    0.7023,    0.0000,    0.3359,
-                       -0.0000,    0.3527,   -0.2491,    0.0000,    0.7023,   -0.3359,
-                        0.3527,   -0.0000,   -0.2491,    0.7023,   -0.0000,   -0.3359,
-                       -0.0000,    0.3527,    0.2491,   -0.0000,    0.7023,    0.3359};
+    Matrix<4,6> K = {   13.9069,    0.0000,    9.7404,    4.6030,    0.0000,    2.2943,
+                         0.0000,   13.9069,   -9.7404,    0.0000,    4.6032,   -2.2943,
+                        13.9069,    0.0000,   -9.7404,    4.6030,    0.0000,   -2.2943,
+                         0.0000,   13.9069,    9.7404,    0.0000,    4.6032,    2.2943};
 
     // State vector for attitude; roll, pitch, yaw, gx, gy, gz
     Matrix<6,1> X = {0,0,0,0,0,0};
@@ -57,6 +65,9 @@ private:
 
     // Throttle setpoint (controlled via RC controller)
     uint16_t SP_throttle = 0;
+
+
+    int16_t servo_offset[4] = {0,0,0,0};
 
 };
 

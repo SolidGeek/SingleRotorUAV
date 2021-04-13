@@ -67,16 +67,16 @@ void Sensors::sample_imu(){
     while ( report_ID = imu->getReadings() ) {
         // Read Attitude estimate
         if( report_ID == SENSOR_REPORTID_ROTATION_VECTOR ){
-            data.roll   = imu->getRoll() * RAD_TO_DEG;
-            data.pitch  = imu->getPitch() * RAD_TO_DEG;
-            data.yaw    = imu->getYaw() * RAD_TO_DEG;
+            data.roll   = imu->getRoll();   // Radians
+            data.pitch  = imu->getPitch();  // Radians
+            data.yaw    = imu->getYaw();    // Radians
         }
 
         // Read Raw Gyro data
         if( report_ID == SENSOR_REPORTID_GYROSCOPE ) {
-            data.gx = LPF( imu->getGyroX() * RAD_TO_DEG, data.gx, 0.4 );
-            data.gy = LPF( imu->getGyroY() * RAD_TO_DEG, data.gy, 0.4 );
-            data.gz = LPF( imu->getGyroZ() * RAD_TO_DEG, data.gz, 0.4 );
+            data.gx = LPF( imu->getGyroX(), data.gx, 0.4 ); // Radians / second
+            data.gy = LPF( imu->getGyroY(), data.gy, 0.4 ); // Radians / second
+            data.gz = LPF( imu->getGyroZ(), data.gz, 0.4 ); // Radians / second
         }
     }
 }

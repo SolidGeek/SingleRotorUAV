@@ -1,7 +1,7 @@
 #ifndef _SRUAV_SENSORS_H
 #define _SRUAV_SENSORS_H
 
-#include "config.h"
+#include "constants.h"
 #include "math.h"
 #include <Wire.h>
 #include <SPI.h>

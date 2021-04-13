@@ -1,8 +1,8 @@
-
+#include "src/config.h"
 #include "src/sensors.h"
 #include "src/control.h"
-#include "src/dshot.h"
 
+Config conf;
 Sensors sensors;
 Control control;
 
@@ -27,34 +27,36 @@ void setup() {
 
     attachInterrupt( rc_input1_pin, rc_input1_interrupt, CHANGE );
 
+    // Load configuration from memorys
+    conf.load();
+
+    control.set_servo_offsets( conf.params.servo_offset);
     control.init();
+    //control.servo_calibration( conf.params.servo_offset );
+    //conf.save();
+
     // Important to init this last, otherwise IMU's buffer overflow and goes into error state....
     sensors.init();
-
-    Serial.println("All systems nominal");
 }
 
 void loop() {
 
+    // Sample as often as possible!
     sensors.sample_imu();
-    // sensors.sample_lidar();
 
     if( micros() - control_timer >= 5000 ){
       control_timer = micros();
 
-
-      Serial.print(sensors.data.roll);
-      Serial.print(",");
-      Serial.println(sensors.data.gx);
+      // Only sample at 200Hz
+      // sensors.sample_lidar();
       
+      control.control_attitude( sensors.data.roll, sensors.data.pitch, 0, sensors.data.gx, sensors.data.gy, 0 );
       
-      // control.control_attitude( sensors.data.roll, sensors.data.pitch, 0, sensors.data.gx, sensors.data.gy, 0 );
-
       uint16_t temp = constrain(rc_input1, 930, 1910);
       throttle = map(temp, 930, 1910, MOTOR_MIN_DSHOT, MOTOR_MAX_DSHOT);
 
-      control.set_motor( DSHOT_PORT_1, throttle );
-      control.set_motor( DSHOT_PORT_2, throttle );
+      control.write_motor( DSHOT_PORT_1, throttle );
+      control.write_motor( DSHOT_PORT_2, throttle );
     }
 
   /*  flow.readMotionCount(&deltaX, &deltaY); */
