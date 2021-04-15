@@ -16,6 +16,12 @@
 
 using namespace BLA;
 
+typedef struct
+{
+    float a1, a2, a3, a4;   // Servo angles
+    uint16_t dshot;            // Motor signal
+} control_signal_t;
+
 class Control
 {
 public:
@@ -39,6 +45,9 @@ public:
     void servo_calibration( int16_t * servo_offset );
 
     void set_servo_offsets( int16_t * servo_offset );
+    
+    // Used for telemetry only
+    control_signal_t data; 
 
 private:
 

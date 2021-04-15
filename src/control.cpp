@@ -97,6 +97,12 @@ void Control::control_attitude( float roll, float pitch, float yaw, float gx, fl
     write_servo(3, U(2) );
     write_servo(0, U(3) ); 
 
+
+    data.a1 = U(0);
+    data.a2 = U(1);
+    data.a3 = U(2);
+    data.a4 = U(3);
+
 }
 
 void Control::get_rc_signals( void ) {

@@ -70,6 +70,10 @@ void Sensors::sample_imu(){
             data.roll   = imu->getRoll();   // Radians
             data.pitch  = imu->getPitch();  // Radians
             data.yaw    = imu->getYaw();    // Radians
+            data.qw = imu->getQuatReal();
+            data.qi = imu->getQuatI();
+            data.qj = imu->getQuatJ();
+            data.qk = imu->getQuatK();
         }
 
         // Read Raw Gyro data

@@ -16,18 +16,26 @@
 
 #define RAD_TO_DEG 180.0f/M_PI
 
+typedef struct{
+    float gx, gy, gz;
+    float ax, ay, az;
+    float roll, pitch, yaw;
+    float vx, vy, vz;
+    float x, y, z;
+    float qw, qi, qj, qk;
+    float wt1, wt2;  // Motor velocity / rpm 
+} sensor_data_t;
+
+typedef struct{
+    uint8_t imu;
+    uint8_t flow;
+    uint8_t lidar;
+} sensor_status_t;
+
 class Sensors
 {
 public:
 
-    struct sensor_data
-    {
-        float gx, gy, gz;
-        float ax, ay, az;
-        float roll, pitch, yaw;
-        float vx, vy, vz;
-        float x, y, z;
-    } data;
 
     Sensors( void );
     
@@ -43,11 +51,8 @@ public:
     // If interpolated measurements are needed, maybe Kalman.
     void run_estimator();
 
-    struct sensor_status{
-        uint8_t imu;
-        uint8_t flow;
-        uint8_t lidar;
-    } status;
+    sensor_data_t data;
+    sensor_status_t status;
 
 private:
 

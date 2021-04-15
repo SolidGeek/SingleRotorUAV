@@ -1,12 +1,16 @@
 #include "src/config.h"
 #include "src/sensors.h"
 #include "src/control.h"
+#include "src/communication.h"
 
 Config conf;
 Sensors sensors;
 Control control;
+Communication comm;
 
 uint32_t control_timer = 0;
+uint32_t tlm_timer = 0;
+
 uint16_t throttle = 0;
 
 uint8_t rc_input1_pin = 19;
@@ -25,6 +29,8 @@ void setup() {
     Serial.println("Welcome aboard the AAU Starliner.");
     Serial.println("Systems booting...");
 
+    comm.init();
+
     attachInterrupt( rc_input1_pin, rc_input1_interrupt, CHANGE );
 
     // Load configuration from memorys
@@ -37,6 +43,7 @@ void setup() {
 
     // Important to init this last, otherwise IMU's buffer overflow and goes into error state....
     sensors.init();
+    Serial.println("System ready");
 }
 
 void loop() {
@@ -57,7 +64,11 @@ void loop() {
 
       control.write_motor( DSHOT_PORT_1, throttle );
       control.write_motor( DSHOT_PORT_2, throttle );
+
+      // Send telemetry by UART to ESP32
+      comm.send_tlm( sensors.data, control.data);
     }
+
 
   /*  flow.readMotionCount(&deltaX, &deltaY); */
 
