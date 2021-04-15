@@ -95,7 +95,11 @@ void Sensors::sample_lidar(){
 
         uint16_t value = lidar->read(false); // Non blocking
 
-        data.z = ((float)value)/1000; // Convert to meters
+        // Altitude measured in body frame.
+        float zb = ((float)value)/1000; // Convert to meters
+
+        // Rotate altitude to world frame
+        data.z = zb*cos( data.pitch)*cos(data.roll);
 
     }
 

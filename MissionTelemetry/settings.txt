@@ -289,7 +289,7 @@ Checksum:
 	autoscale y-axis minimum = false
 	manual y-axis minimum = 0.0
 	autoscale y-axis maximum = false
-	manual y-axis maximum = 5.0
+	manual y-axis maximum = 2.0
 	show x-axis title = true
 	show x-axis scale = true
 	show y-axis title = true

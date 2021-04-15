@@ -50,13 +50,11 @@ void loop() {
 
     // Sample as often as possible!
     sensors.sample_imu();
+    sensors.sample_lidar();
 
     if( micros() - control_timer >= 5000 ){
       control_timer = micros();
 
-      // Only sample at 200Hz
-      // sensors.sample_lidar();
-      
       control.control_attitude( sensors.data.roll, sensors.data.pitch, 0, sensors.data.gx, sensors.data.gy, 0 );
       
       uint16_t temp = constrain(rc_input1, 930, 1910);
