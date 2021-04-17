@@ -16,7 +16,7 @@ Communication Settings:
 
 	port = UDP
 	uart baud rate = 9600
-	tcp/udp port number = 8080
+	tcp/udp port number = 8888
 	packet type = Binary
 	sample rate = 200
 

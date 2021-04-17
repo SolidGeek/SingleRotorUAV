@@ -33,7 +33,7 @@ const char* ssid     = "SR-UAV GUI";
 const char* password = "123456789";
 
 const char * UDP_address = "255.255.255.255";
-const int UDP_port = 8080;
+const int UDP_port = 8888;
 
 //The udp library class
 WiFiUDP UDP;
@@ -50,16 +50,10 @@ void setup() {
 
 void loop(){
 
-  if(UART.available())
-  {
+  if( UART.available() ){
+    
     UART.rxObj( rx_buffer );
-
-    Serial.print( rx_buffer.x.gx);
-    Serial.print(',');
-    Serial.print( rx_buffer.x.gy);
-    Serial.print(',');
-    Serial.println( rx_buffer.x.gz);
-
+    
     memset( tx_buffer, 0, tx_size );
     uint16_t checksum = 0;
     uint8_t value;
@@ -76,9 +70,9 @@ void loop(){
       checksum += tx_buffer[i];
     }
 
-    // Append checksum
-    tx_buffer[i++] = checksum & 0xFF;
-    tx_buffer[i++] = checksum >> 8;
+    // Append checksum (apparently not needed?)
+    // tx_buffer[i++] = checksum & 0xFF;
+    // tx_buffer[i++] = checksum >> 8;
 
     // Transmit UDP package
     UDP.beginPacket( UDP_address, UDP_port );
@@ -86,8 +80,8 @@ void loop(){
     UDP.endPacket();
   }
 
-  if( WiFi.softAPgetStationNum() > 0 )
+  if( WiFi.softAPgetStationNum() > 0 ){
     digitalWrite(led_pin, HIGH);  
-  else
+  }else
     digitalWrite(led_pin, LOW);  
 }
