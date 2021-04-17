@@ -1402,7 +1402,7 @@ boolean BNO080::receivePacket(void)
 		for (uint16_t dataSpot = 0; dataSpot < dataLength; dataSpot++)
 		{
 			uint8_t incoming = _spiPort->transfer(0xFF);
-			if (dataSpot < MAX_PACKET_SIZE)	//BNO080 can respond with upto 270 bytes, avoid overflow
+			if (dataSpot < BNO_MAX_PACKET_SIZE)	//BNO080 can respond with upto 270 bytes, avoid overflow
 				shtpData[dataSpot] = incoming; //Store data into the shtpData array
 		}
 
@@ -1455,7 +1455,7 @@ boolean BNO080::receivePacket(void)
 }
 
 //Sends multiple requests to sensor until all data bytes are received from sensor
-//The shtpData buffer has max capacity of MAX_PACKET_SIZE. Any bytes over this amount will be lost.
+//The shtpData buffer has max capacity of BNO_MAX_PACKET_SIZE. Any bytes over this amount will be lost.
 //Arduino I2C read limit is 32 bytes. Header is 4 bytes, so max data we can read per interation is 28 bytes
 boolean BNO080::getData(uint16_t bytesRemaining)
 {
@@ -1481,7 +1481,7 @@ boolean BNO080::getData(uint16_t bytesRemaining)
 		for (uint8_t x = 0; x < numberOfBytesToRead; x++)
 		{
 			uint8_t incoming = _i2cPort->read();
-			if (dataSpot < MAX_PACKET_SIZE)
+			if (dataSpot < BNO_MAX_PACKET_SIZE)
 			{
 				shtpData[dataSpot++] = incoming; //Store data into the shtpData array
 			}

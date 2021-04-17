@@ -29,7 +29,8 @@ void Sensors::init(void){
     // Init IMU
     if( imu->beginSPI() ){
         // Continous sample of sensors
-        imu->enableGyro( 3 );  // 2.5ms / 400hz
+        imu->enableGyro(5);  // 5ms / 200hz
+        imu->enableLinearAccelerometer(5);  // 5ms / 200hz
         imu->enableRotationVector(5); // 5ms / 200Hz
         status.imu = STATUS_READY;
     }else{
@@ -74,6 +75,12 @@ void Sensors::sample_imu(){
             data.qi = imu->getQuatI();
             data.qj = imu->getQuatJ();
             data.qk = imu->getQuatK();
+        }
+
+        if( report_ID == SENSOR_REPORTID_LINEAR_ACCELERATION ){
+            data.ax = imu->getLinAccelX();
+            data.ay = imu->getLinAccelY();
+            data.az = imu->getLinAccelZ();
         }
 
         // Read Raw Gyro data

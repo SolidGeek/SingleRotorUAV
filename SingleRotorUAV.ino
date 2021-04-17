@@ -64,7 +64,9 @@ void loop() {
       control.write_motor( DSHOT_PORT_2, throttle );
 
       // Send telemetry by UART to ESP32
+      uint32_t tlm_timer = micros();
       comm.send_tlm( sensors.data, control.data);
+      Serial.println( micros() - tlm_timer );
     }
 
 

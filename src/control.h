@@ -16,8 +16,7 @@
 
 using namespace BLA;
 
-typedef struct
-{
+typedef struct __attribute__ ((packed)){
     float a1, a2, a3, a4;   // Servo angles
     uint16_t dshot;            // Motor signal
 } control_signal_t;

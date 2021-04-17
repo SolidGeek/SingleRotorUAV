@@ -14,16 +14,13 @@
 #define STATUS_FAILED_SETUP 0x02
 #define STATUS_NO_RESPONSE 0x03
 
-#define RAD_TO_DEG 180.0f/M_PI
-
-typedef struct{
+typedef struct __attribute__ ((packed)){
     float gx, gy, gz;
-    float ax, ay, az;
     float roll, pitch, yaw;
+    float qw, qi, qj, qk;
+    float ax, ay, az;
     float vx, vy, vz;
     float x, y, z;
-    float qw, qi, qj, qk;
-    float wt1, wt2;  // Motor velocity / rpm 
 } sensor_data_t;
 
 typedef struct{
