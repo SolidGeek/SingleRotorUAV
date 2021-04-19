@@ -94,6 +94,22 @@ void Sensors::sample_imu(){
 
 void Sensors::sample_flow(){
 
+    int16_t dx, dy;
+    float vx, vy;
+    float dt = (float)(micros() - last_flow_sample)/1000000;
+
+    flow->readMotionCount( &dx, &dy );
+
+    vx = (float)dx / dt * data.z;
+    vy = (float)dy / dt * data.z;
+
+    data.vx = LPF( vx, data.vx, 0.4 ); // meter / second
+    data.vy = LPF( vy, data.vy, 0.4 ); // meter / second
+
+    Serial.print(data.vx);
+    Serial.print(",");
+    Serial.println(data.vy);
+
 }
 
 void Sensors::sample_lidar(){

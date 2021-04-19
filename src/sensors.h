@@ -61,6 +61,8 @@ private:
     // Low pass filter to filter sensor data
     float LPF( float new_sample, float old_sample, float alpha );
 
+    uint32_t last_flow_sample;
+
 };
 
 

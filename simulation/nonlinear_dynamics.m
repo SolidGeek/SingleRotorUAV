@@ -19,6 +19,7 @@ function dx = nonlinear_dynamics(t, x, u)
     l = 0.09471940;     % m
     r = 0.04;           % m 
     
+    
     % Nonlinear dynamics
     dp = wx + (wz*cos(p)*sin(q))/cos(q) + (wy*sin(p)*sin(q))/cos(q);
     dq = wy*cos(p) - wz*sin(p);
@@ -33,7 +34,15 @@ function dx = nonlinear_dynamics(t, x, u)
     dvy = (CL*Kt*a1*wt^2 + CL*Kt*a3*wt^2 - g*m*cos(q)*sin(p))/m;
     dvz = -(CD*Kt*wt^2 - Kt*wt^2 + g*m*cos(p)*cos(q))/m;
     
-    % Return the derivatives
-    dx = [dp; dq; dc; dwx; dwy; dwz; dpx; dpy; dpz; dvx; dvy; dvz];
+    % If the total force in the body-z direction is larger then gravity (dvz > 0), or the drone already is in
+    % the air (pz > 0), return all derivatives. 
+    if( dvz > 0 || pz > 0 )
+        % Return the derivatives
+        dx = [dp; dq; dc; dwx; dwy; dwz; dpx; dpy; dpz; dvx; dvy; dvz];
+    else
+        % Return the derivatives
+        dx = [dp; dq; dc; dwx; dwy; dwz; dpx; dpy; 0; dvx; dvy; 0];
+    end
+    
 
 end

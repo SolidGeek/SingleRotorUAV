@@ -77,6 +77,9 @@ void loop() {
 
       /* control.write_motor( DSHOT_PORT_1, throttle );
       control.write_motor( DSHOT_PORT_2, throttle ); */
+
+      // The flow sensor outputs delta changes, needs to be sampled consistently
+      sensors.sample_flow();
       
     }
 
@@ -85,11 +88,8 @@ void loop() {
       // Send telemetry by UART to ESP32
       tlm_timer = micros();
       logger.write_esp( sensors.data, control.data );
-      logger.write_sd( sensors.data, control.data );
+      // logger.write_sd( sensors.data, control.data );
     }
-
-  
-  /*  flow.readMotionCount(&deltaX, &deltaY); */
 
 }
 

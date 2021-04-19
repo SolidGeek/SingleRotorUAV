@@ -123,11 +123,23 @@ B_red = double(vpa(subs(B2), 4));
 C_red = eye(8);
 D_red = zeros(8,5);
 
+
+% Reduced model with integral action states
+G_i = [1 0 0 0 0 0 0 0  ; % roll
+       0 1 0 0 0 0 0 0  ; % pitch
+       0 0 0 0 0 0 1 0 ]; % z
+   
+A_int = [A_red; G_i];
+A_int = [A_int zeros(11,3) ];
+B_int = [B_red; zeros(3,5) ];
+C_int = eye(11);
+D_int = zeros(11,5);
+
 %% Open Loop dynamics
 
 sys = ss(A_sys,B_sys,C_sys,D_sys);
 sys_red = ss(A_red,B_red,C_red,D_red);
-
+sys_int = ss(A_int,B_int,C_int, D_int);
 
 %% Design controller
 
@@ -140,20 +152,25 @@ Q = [ 1/0.3^2  0        0        0      0      0      0        0       ;  % Roll
       0        0        0        0      1/5^2  0      0        0       ;  % omega_y
       0        0        0        0      0      1/5^2  0        0       ;  % omega_z
       0        0        0        0      0      0      1/10^2   0       ;  % z
-      0        0        0        0      0      0      0        1/10^2  ]; % v_z
+      0        0        0        0      0      0      0        1/5^2  ]; % v_z
+  
+% Integral action  
+Q(9:11,9:11) = [ 0.1   0     0  ;   % roll 
+                 0     0.1   0  ;   % pitch
+                 0     0     5 ]; % z
       
 % Max actuation angle of +-10 degress
 R = [ 1/10^2   0       0       0       0       ; % a1
       0        1/10^2  0       0       0       ; % a2
       0        0       1/10^2  0       0       ; % a3
       0        0       0       1/10^2  0       ; % a4
-      0        0       0       0       1/50^2 ]; % wt
+      0        0       0       0       1/5^2  ]; % wt
 
 % Compute "optimal" controller
-K_lqr = lqr(sys_red, Q, R);
+K_lqr = lqr(sys_int, Q, R)
 
 % Calcuate closed loop system
-cl_sys = ss((A_red - B_red*K_lqr), B_red, C_red, D_red );
+% cl_sys = ss((A_red - B_red*K_lqr), B_red, C_red, D_red );
 
 
 %% Symbolic Discretization
