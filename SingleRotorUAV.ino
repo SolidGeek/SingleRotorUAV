@@ -1,12 +1,12 @@
 #include "src/config.h"
 #include "src/sensors.h"
 #include "src/control.h"
-#include "src/communication.h"
+#include "src/logger.h"
 
 Config conf;
 Sensors sensors;
 Control control;
-Communication comm;
+Logger logger;
 
 uint32_t control_timer = 0;
 uint32_t tlm_timer = 0;
@@ -29,22 +29,26 @@ void setup() {
     Serial.println("Welcome aboard the AAU Starliner.");
     Serial.println("Systems booting...");
 
-    comm.init();
-
     attachInterrupt( rc_input1_pin, rc_input1_interrupt, CHANGE );
+
+    // Prepare telemetry and logger
+    logger.init();
 
     // Load configuration from memorys
     conf.load();
 
+    // Configure servo offsets
     control.set_servo_offsets( conf.params.servo_offset);
     control.init();
-    //control.servo_calibration( conf.params.servo_offset );
-    //conf.save();
 
     // Important to init this last, otherwise IMU's buffer overflow and goes into error state....
     sensors.init();
-    Serial.println("System ready");
+
+    
+    Serial.println("Systems ready");
 }
+
+bool logging_initiated = false;
 
 void loop() {
 
@@ -60,20 +64,31 @@ void loop() {
       uint16_t temp = constrain(rc_input1, 930, 1910);
       throttle = map(temp, 930, 1910, MOTOR_MIN_DSHOT, MOTOR_MAX_DSHOT);
 
-      control.write_motor( DSHOT_PORT_1, throttle );
-      control.write_motor( DSHOT_PORT_2, throttle );
+      if( throttle > 100 && !logging_initiated ){
+        logging_initiated = true;
+        logger.start_log();
+        Serial.println("Started Logging");
+      }
+      
+      if ( throttle < 50 && logging_initiated ){
+        logger.end_log();
+        Serial.println("Logging Ended");
+      }
 
+      /* control.write_motor( DSHOT_PORT_1, throttle );
+      control.write_motor( DSHOT_PORT_2, throttle ); */
       
     }
 
-    // Send telemetry at 50 Hz
-    if( micros() - tlm_timer > 20000 ) {
+    // Send telemetry at 40 Hz
+    if( micros() - tlm_timer > 25000 ) {
       // Send telemetry by UART to ESP32
       tlm_timer = micros();
-      comm.send_tlm( sensors.data, control.data);
+      logger.write_esp( sensors.data, control.data );
+      logger.write_sd( sensors.data, control.data );
     }
 
-
+  
   /*  flow.readMotionCount(&deltaX, &deltaY); */
 
 }

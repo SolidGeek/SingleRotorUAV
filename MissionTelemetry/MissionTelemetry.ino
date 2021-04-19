@@ -22,9 +22,14 @@ typedef struct __attribute__ ((packed)){
   control_signal_t u; // System input  (actuation)
 } tlm_data_t;
 
+
 tlm_data_t rx_buffer; 
-const size_t tx_size = sizeof(tlm_data_t)+3;
-uint8_t tx_buffer[tx_size];
+
+const uint16_t tx_size = sizeof(tlm_data_t)+1;
+const uint16_t udp_buffer_size = tx_size*1; // Room for 1 udp_packages
+uint8_t tx_buffer[udp_buffer_size]; 
+uint16_t tx_index = 0;
+
 
 int led_pin = 12;
 
@@ -50,34 +55,30 @@ void setup() {
 
 void loop(){
 
-  if( UART.available() ){
-    
-    UART.rxObj( rx_buffer );
+  if( tx_index >= udp_buffer_size ){
+
+    // Send that big boi
+    UDP.beginPacket( UDP_address, UDP_port );
+    UDP.write(tx_buffer, udp_buffer_size );
+    UDP.endPacket();
     
     memset( tx_buffer, 0, tx_size );
-    uint16_t checksum = 0;
-    uint8_t value;
-    uint8_t i = 0;
-    
-    // Get pointer to rx buffer, to write out each byte
+    tx_index = 0;
+  }
+
+  if( UART.available() ){
+    // Read object into rx_buffer
+    UART.rxObj( rx_buffer );
+
+    // Transfer data from rx_buffer to tx_buffer 
     uint8_t * rx_buffer_ptr = (uint8_t*)&rx_buffer;
 
     // Start with Sync Word used by Telemetry Viewer
-    tx_buffer[i++] = 0xAA;
- 
-    for(uint8_t j = 0; j < sizeof(tlm_data_t); j++ ){
-      tx_buffer[i++] = *rx_buffer_ptr++;
-      checksum += tx_buffer[i];
+    tx_buffer[tx_index++] = 0xAA;
+    // Fill in the rest
+    for(uint8_t i = 0; i < sizeof(tlm_data_t); i++ ){
+      tx_buffer[tx_index++] = *rx_buffer_ptr++;
     }
-
-    // Append checksum (apparently not needed?)
-    // tx_buffer[i++] = checksum & 0xFF;
-    // tx_buffer[i++] = checksum >> 8;
-
-    // Transmit UDP package
-    UDP.beginPacket( UDP_address, UDP_port );
-    UDP.write(tx_buffer, i );
-    UDP.endPacket();
   }
 
   if( WiFi.softAPgetStationNum() > 0 ){
