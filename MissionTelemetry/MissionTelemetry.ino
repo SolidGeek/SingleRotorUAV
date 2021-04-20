@@ -3,12 +3,17 @@
 #include "SerialTransfer.h"
 
 typedef struct __attribute__ ((packed)){
-  float gx, gy, gz;
-  float roll, pitch, yaw;
-  float qw, qi, qj, qk;
-  float ax, ay, az;
-  float vx, vy, vz;
-  float x, y, z;
+    float gx, gy, gz;
+    float roll, pitch, yaw;
+    float qw, qi, qj, qk;
+    float ax, ay, az;
+    float vx, vy, vz;
+    float x, y, z;
+    struct{ // Bitfield, using 1 byte, to represent if new measurements are available
+        uint8_t imu     : 1;
+        uint8_t flow    : 1;
+        uint8_t lidar   : 1;
+    } status;
 } sensor_data_t;
 
 typedef struct __attribute__ ((packed)){
@@ -69,7 +74,7 @@ void loop(){
   if( UART.available() ){
     // Read object into rx_buffer
     UART.rxObj( rx_buffer );
-
+    
     // Transfer data from rx_buffer to tx_buffer 
     uint8_t * rx_buffer_ptr = (uint8_t*)&rx_buffer;
 

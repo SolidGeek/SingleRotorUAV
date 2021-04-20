@@ -21,6 +21,11 @@ typedef struct __attribute__ ((packed)){
     float ax, ay, az;
     float vx, vy, vz;
     float x, y, z;
+    struct{ // Bitfield, using 1 byte, to represent if new measurements are available
+        uint8_t imu     : 1;
+        uint8_t flow    : 1;
+        uint8_t lidar   : 1;
+    } status;
 } sensor_data_t;
 
 typedef struct{
@@ -29,10 +34,10 @@ typedef struct{
     uint8_t lidar;
 } sensor_status_t;
 
+
 class Sensors
 {
 public:
-
 
     Sensors( void );
     
@@ -47,6 +52,8 @@ public:
 
     // If interpolated measurements are needed, maybe Kalman.
     void run_estimator();
+
+    sensor_data_t get_samples();
 
     sensor_data_t data;
     sensor_status_t status;

@@ -20,10 +20,10 @@ void Logger::init(){
     
 }
 
-void Logger::write_esp( sensor_data_t measurements, control_signal_t controls ){
+void Logger::write_esp( sensor_data_t samples, control_signal_t controls ){
 
     memset(&tx_buffer, 0, sizeof(tx_buffer)); 
-    tx_buffer.x = measurements;
+    tx_buffer.x = samples;
     tx_buffer.u = controls;
 
     // Send struct of data over UART

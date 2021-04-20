@@ -44,7 +44,6 @@ void setup() {
     // Important to init this last, otherwise IMU's buffer overflow and goes into error state....
     sensors.init();
 
-    
     Serial.println("Systems ready");
 }
 
@@ -83,11 +82,12 @@ void loop() {
       
     }
 
-    // Send telemetry at 40 Hz
-    if( micros() - tlm_timer > 25000 ) {
+    // Send telemetry at 100 Hz
+    if( micros() - tlm_timer >= 10000 ) {
       // Send telemetry by UART to ESP32
       tlm_timer = micros();
-      logger.write_esp( sensors.data, control.data );
+
+      logger.write_esp( sensors.get_samples(), control.data );
       // logger.write_sd( sensors.data, control.data );
     }
 

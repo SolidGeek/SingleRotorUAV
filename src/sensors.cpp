@@ -57,7 +57,14 @@ void Sensors::init(void){
     }else{
         status.lidar = STATUS_FAILED_SETUP;
     }
+}
 
+sensor_data_t Sensors::get_samples( void ){
+
+    sensor_data_t temp = data;
+    data.status = {};
+    
+    return temp;
 
 }
 
@@ -89,6 +96,9 @@ void Sensors::sample_imu(){
             data.gy = LPF( imu->getGyroY(), data.gy, 0.4 ); // Radians / second
             data.gz = LPF( imu->getGyroZ(), data.gz, 0.4 ); // Radians / second
         }
+
+        data.status.imu = 1;
+
     }
 }
 
@@ -98,17 +108,17 @@ void Sensors::sample_flow(){
     float vx, vy;
     float dt = (float)(micros() - last_flow_sample)/1000000;
 
+    // if (dt > 0.05) return;
+    
     flow->readMotionCount( &dx, &dy );
 
-    vx = (float)dx / dt * data.z;
-    vy = (float)dy / dt * data.z;
+    vx = (float)dx * data.z;
+    vy = (float)dy * data.z;
 
     data.vx = LPF( vx, data.vx, 0.4 ); // meter / second
     data.vy = LPF( vy, data.vy, 0.4 ); // meter / second
 
-    Serial.print(data.vx);
-    Serial.print(",");
-    Serial.println(data.vy);
+    data.status.flow = 1;
 
 }
 
@@ -123,6 +133,8 @@ void Sensors::sample_lidar(){
 
         // Rotate altitude to world frame
         data.z = zb*cos( data.pitch)*cos(data.roll);
+
+        data.status.lidar = 1;
 
     }
 
