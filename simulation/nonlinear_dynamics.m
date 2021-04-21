@@ -27,13 +27,20 @@ function dx = nonlinear_dynamics(t, x, u)
     dwx = (l*(CL*Kt*a1*wt^2 + CL*Kt*a3*wt^2) + Jy*wy*wz - Jz*wy*wz)/Jx;
     dwy = -(l*(CL*Kt*a2*wt^2 + CL*Kt*a4*wt^2) + Jx*wx*wz - Jz*wx*wz)/Jy;
     dwz = (r*(CL*Kt*a1*wt^2 - CL*Kt*a2*wt^2 - CL*Kt*a3*wt^2 + CL*Kt*a4*wt^2) + Jx*wx*wy - Jy*wx*wy)/Jz;
+%     dpx = vx;
+%     dpy = vy;
+%     dpz = vz;
+%     dvx = ((sin(p)*sin(c) + cos(p)*cos(c)*sin(q))*(Kt*wt^2 - CD*Kt*wt^2))/m - ((cos(p)*sin(c) - cos(c)*sin(p)*sin(q))*(CL*Kt*a1*wt^2 + CL*Kt*a3*wt^2))/m + (cos(q)*cos(c)*(CL*Kt*a2*wt^2 + CL*Kt*a4*wt^2))/m;
+%     dvy = ((cos(p)*cos(c) + sin(p)*sin(q)*sin(c))*(CL*Kt*a1*wt^2 + CL*Kt*a3*wt^2))/m - ((cos(c)*sin(p) - cos(p)*sin(q)*sin(c))*(Kt*wt^2 - CD*Kt*wt^2))/m + (cos(q)*sin(c)*(CL*Kt*a2*wt^2 + CL*Kt*a4*wt^2))/m;
+%     dvz = (cos(p)*cos(q)*(Kt*wt^2 - CD*Kt*wt^2))/m - (sin(q)*(CL*Kt*a2*wt^2 + CL*Kt*a4*wt^2))/m - g*m + (cos(q)*sin(p)*(CL*Kt*a1*wt^2 + CL*Kt*a3*wt^2))/m;
+    
     dpx = vz*(sin(p)*sin(c) + cos(p)*cos(c)*sin(q)) - vy*(cos(p)*sin(c) - cos(c)*sin(p)*sin(q)) + vx*cos(q)*cos(c);
     dpy = vy*(cos(p)*cos(c) + sin(p)*sin(q)*sin(c)) - vz*(cos(c)*sin(p) - cos(p)*sin(q)*sin(c)) + vx*cos(q)*sin(c);
     dpz = vz*cos(p)*cos(q) - vx*sin(q) + vy*cos(q)*sin(p);
     dvx = (g*m*sin(q) + CL*Kt*a2*wt^2 + CL*Kt*a4*wt^2)/m;
     dvy = (CL*Kt*a1*wt^2 + CL*Kt*a3*wt^2 - g*m*cos(q)*sin(p))/m;
     dvz = -(CD*Kt*wt^2 - Kt*wt^2 + g*m*cos(p)*cos(q))/m;
-    
+
     % If the total force in the body-z direction is larger then gravity (dvz > 0), or the drone already is in
     % the air (pz > 0), return all derivatives. 
     if( dvz > 0 || pz > 0 )

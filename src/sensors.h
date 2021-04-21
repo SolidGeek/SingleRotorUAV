@@ -5,10 +5,12 @@
 #include "math.h"
 #include <Wire.h>
 #include <SPI.h>
+#include <BasicLinearAlgebra.h>
 #include "BNO080.h"     // IMU 
 #include "PMW3901.h"    // FLOW
 #include "VL53L1X.h"
 
+using namespace BLA;
 
 #define STATUS_READY 0x01
 #define STATUS_FAILED_SETUP 0x02
@@ -52,6 +54,8 @@ public:
 
     // If interpolated measurements are needed, maybe Kalman.
     void run_estimator();
+
+    void rotate_to_world( float * vector );
 
     sensor_data_t get_samples();
 

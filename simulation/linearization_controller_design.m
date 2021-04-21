@@ -62,6 +62,9 @@ wb_dot = inv(J) * (tb - cross(wb, J * wb)  );
 pw_dot = R * vb;
 vb_dot = 1/m * ( fb -  R.' * [0 0 m*g].');
 
+% Translational dynamics in world
+vw_dot = 1/m * R * fb - [0 0 m*g].';
+
 %% Combined non-linear model
 
 f = [ nw_dot  ;

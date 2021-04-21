@@ -5,48 +5,7 @@ clear
 u = udpport("datagram", "LocalPort", 8888);
 
 
-% Kalman filter settings
 
-dt = 0.01; % 100 Hz
-
-% --- Covariance matrixes ---
-% Process noise 
-sigma = 2;
-Q = [dt^4/4  0       0       dt^3/2 ;   % p_z
-     0       dt^2    0       0      ;   % v_x
-     0       0       dt^2    0      ;   % v_y
-     dt^3/2  0       0       dt^2   ] * sigma;  % v_z
-
-% Measurement noise
-R = [1/100  0      0      0;   % LIDAR p_z
-     0      1/400  0      0;   % VO v_x       
-     0      0      1/400  0;   % VO v_y
-     0      0      0      1]; % 
-
-% --- System matrixes ---
-A = [ 1  0  0  dt ;  % dz
-      0  1  0  0  ;  % dvx
-      0  0  1  0  ;  % dvy
-      0  0  0  1 ];  % dvz
-
-%     ax        ay        az      
-B = [ 0         0         0.5*dt^2  ;  % z
-      dt        0         0         ;  % vx
-      0         dt        0         ;  % vy
-      0         0         dt        ]; % vz
-  
-C = [ 1 0 0 0; 
-      0 1 0 0;
-      0 0 1 0;
-      0 0 0 0];  
-  
-% Calculate steady state kalman gain
-Ts = 14;
-sys = ss(A,B,C,zeros(4,3));
-G = eye(4)*1;
-global kf;
-kf = dlqe(A,G,C,Q,R);
-% lqe(A,Q,C,Q,R)
 
 %% 
 
@@ -73,15 +32,17 @@ vy_line = line(vel_plot,1:200,zeros(200,1), 'Color', 'Blue');
 vz_line = line(vel_plot,1:200,zeros(200,1), 'Color', 'Green');
 stripchart('Initialize', vel_plot, 'samples');
 
-
 while( 1 )
     
     % Each time a new packet is available
     if( u.NumDatagramsAvailable )
-
+        
+        index = index + 1;
+        index 
         % Read one package from 
         package = read(u,1);
         data = extract_tlm( package.Data );
+        optager.data(index) = data;
         
         % Build H matrix, to indicate which measurements are ready
         H = zeros(4,4);
@@ -99,16 +60,18 @@ while( 1 )
         
         measurements = [data.z; data.vx; data.vy; 0];
         
-        [x, P] = discrete_kalman_filter( x, P, input, measurements, H, A, B, Q, R );
-        x2 = discrete_ss_kalman_filter( x2, input, measurements, H, A, B );
+        % [x, P] = discrete_kalman_filter( x, P, input, measurements, H, A, B, Q, R );
+        optager.u(index, :) = input;
+        optager.z(index, :) = measurements;
+        optager.x(index, :) = discrete_ss_kalman_filter( x2, input, measurements, H, A, B );
 %         stripchart('Update',ax_line, input(1));
 %         stripchart('Update',ay_line, input(2));
 %         stripchart('Update',az_line, input(3));
  
-        stripchart('Update',vx_line, x(2) );
-        stripchart('Update',vy_line, x2(2) );
-        % stripchart('Update',vz_line, x(4));
-        drawnow % refresh display
+%         stripchart('Update',vx_line, x2(1) );
+%         stripchart('Update',vy_line, data.z );
+%         % stripchart('Update',vz_line, x(4));
+%         drawnow % refresh display
 
     end
 
