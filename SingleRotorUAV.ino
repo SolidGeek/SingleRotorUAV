@@ -13,11 +13,12 @@ tlm_data_t tlm;
 
 uint32_t control_timer = 0;
 uint32_t flow_timer = 0;
-uint16_t throttle = 0;
 
 uint8_t rc_input1_pin = 19;
 uint16_t rc_input1;
 elapsedMicros rc_input1_timer;
+
+uint16_t throttle = 0;
 
 void rc_input1_interrupt(){
    if( digitalReadFast(rc_input1_pin) == HIGH )
@@ -68,16 +69,33 @@ void loop() {
       
       // Run estimator and control
       sensors.run_estimator();
-      control.control_hover( sensors.data.roll, sensors.data.pitch, 0, sensors.data.gx, sensors.data.gy, 0, sensors.estimate.z, 0 );
+      control.control_hover( sensors.data.roll, sensors.data.pitch, 0, sensors.data.gx, sensors.data.gy, 0, sensors.estimate.z, sensors.estimate.vz );
+
+
+
+      // Manuel throttle override
+      uint16_t temp = constrain(rc_input1, 930, 1910);
+      uint16_t rc_throttle = map(temp, 930, 1910, MOTOR_MIN_DSHOT, MOTOR_MAX_DSHOT);
+      control.set_max_throttle(rc_throttle);
+      
+      if( rc_throttle == 0 ){
+        control.reset_integral_action();
+      }
+
+
 
       // Save control and estimates to tlm.
       tlm.estimate = sensors.estimate;
       tlm.control = control.data;
       logger.write_esp( tlm );
+
+
+
+      Serial.print(rc_throttle);
+      Serial.print(",");
+      Serial.println(control.data.dshot);
       
-      /* uint16_t temp = constrain(rc_input1, 930, 1910);
-      throttle = map(temp, 930, 1910, MOTOR_MIN_DSHOT, MOTOR_MAX_DSHOT);
-      control.write_motor( DSHOT_PORT_1, throttle );
-      control.write_motor( DSHOT_PORT_2, throttle ); */
+      
+      
     }
 }

@@ -50,6 +50,10 @@ public:
     void servo_calibration( int16_t * servo_offset );
 
     void set_servo_offsets( int16_t * servo_offset );
+
+    void reset_integral_action( void );
+
+    void set_max_throttle( uint16_t dshot );
     
     // Used for telemetry only
     control_signal_t data; 
@@ -88,7 +92,9 @@ private:
     Matrix<8,1> SP = {0,0,0,0,0,0,1,0};
 
     // Throttle setpoint (controlled via RC controller)
-    uint16_t SP_throttle = 0;
+    uint16_t SP_throttle = 1;
+
+    uint16_t max_throttle = DSHOT_MAX_OUTPUT;
 
 
     int16_t servo_offset[4] = {0,0,0,0};

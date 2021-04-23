@@ -81,11 +81,11 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
 
     // SP(6): z_sp
     
-    float error_z = SP(6) - z; 
+    float error_z = SP_throttle - z; 
     float int_z = X(8);
 
     // Some integral windup
-    if( data.dshot < 1500 || error_z < 0 )
+    if( data.dshot < max_throttle || error_z < 0 )
         int_z += error_z * CONTROL_LOOP_INTERVAL;
 
     // Load states into state-vector (int_z = integral term)
@@ -102,11 +102,28 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
     data.a2 = U(1);
     data.a3 = U(2);
     data.a4 = U(3);
-    data.dshot = (uint16_t)(MOTOR_KRPM_TO_DSHOT * -U(4));
+    
+    uint16_t control_throttle = (uint16_t)(MOTOR_KRPM_TO_DSHOT * -U(4));
 
-    Serial.print(int_z);
-    Serial.print(",");
-    Serial.println(data.dshot);
+    if( control_throttle >  max_throttle )
+        data.dshot = max_throttle;
+    else
+        data.dshot = control_throttle;
+
+
+    write_motor( DSHOT_PORT_1, data.dshot );
+    write_motor( DSHOT_PORT_2, data.dshot );
+
+}
+
+void Control::reset_integral_action( void ){
+
+    X(8) = 0;
+
+}
+
+void Control::set_max_throttle( uint16_t dshot ){
+    max_throttle = dshot;
 }
 
 void Control::control_attitude( float roll, float pitch, float yaw, float gx, float gy, float gz ){
