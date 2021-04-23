@@ -76,6 +76,39 @@ void Control::write_servo_ms( uint8_t index, uint16_t ms ){
 }
 
 
+
+void Control::control_hover( float roll, float pitch, float yaw, float gx, float gy, float gz, float z, float vz ){
+
+    // SP(6): z_sp
+    
+    float error_z = SP(6) - z; 
+    float int_z = X(8);
+
+    // Some integral windup
+    if( data.dshot < 1500 || error_z < 0 )
+        int_z += error_z * CONTROL_LOOP_INTERVAL;
+
+    // Load states into state-vector (int_z = integral term)
+    X << roll, pitch, yaw, gx, gy, gz, z, vz, int_z;
+
+    U = -K * X; 
+
+    write_servo(1, -U(0) );
+    write_servo(2, -U(1) );
+    write_servo(3, U(2) );
+    write_servo(0, U(3) ); 
+
+    data.a1 = U(0);
+    data.a2 = U(1);
+    data.a3 = U(2);
+    data.a4 = U(3);
+    data.dshot = (uint16_t)(MOTOR_KRPM_TO_DSHOT * -U(4));
+
+    Serial.print(int_z);
+    Serial.print(",");
+    Serial.println(data.dshot);
+}
+
 void Control::control_attitude( float roll, float pitch, float yaw, float gx, float gy, float gz ){
 
     // Load states into state-vector
@@ -83,26 +116,15 @@ void Control::control_attitude( float roll, float pitch, float yaw, float gx, fl
 
     U = -K * X;
     
-    /* Serial.print(roll);
-    Serial.print(",");
-    Serial.print(pitch);
-    Serial.print(",");
-    Serial.print(gx);
-    Serial.print(",");
-    Serial.println(gy); */
-
-
     write_servo(1, -U(0) );
     write_servo(2, -U(1) );
     write_servo(3, U(2) );
     write_servo(0, U(3) ); 
 
-
     data.a1 = U(0);
     data.a2 = U(1);
     data.a3 = U(2);
     data.a4 = U(3);
-
 }
 
 void Control::get_rc_signals( void ) {

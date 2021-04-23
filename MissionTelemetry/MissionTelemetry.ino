@@ -2,13 +2,13 @@
 #include <WiFi.h>
 #include "SerialTransfer.h"
 
+/* --- Data structs for telemetry --- */
 typedef struct __attribute__ ((packed)){
     float gx, gy, gz;
     float roll, pitch, yaw;
-    float qw, qi, qj, qk;
     float ax, ay, az;
-    float vx, vy, vz;
-    float x, y, z;
+    float vx, vy;
+    float z;
     struct{ // Bitfield, using 1 byte, to represent if new measurements are available
         uint8_t imu     : 1;
         uint8_t flow    : 1;
@@ -17,17 +17,22 @@ typedef struct __attribute__ ((packed)){
 } sensor_data_t;
 
 typedef struct __attribute__ ((packed)){
+    float x, y, z;
+    float vx, vy, vz;
+} estimator_data_t;
+
+typedef struct __attribute__ ((packed)){
   float a1, a2, a3, a4;   // Servo angles
   uint16_t dshot;         // Motor signal
 } control_signal_t;
 
-// Serial transfer object
 typedef struct __attribute__ ((packed)){
-  sensor_data_t x;    // System output (states)
-  control_signal_t u; // System input  (actuation)
+    sensor_data_t data;    // System output (states)
+    estimator_data_t estimate;
+    control_signal_t control; // System input  (actuation)
 } tlm_data_t;
 
-
+// Create struct to act as RX buffer
 tlm_data_t rx_buffer; 
 
 const uint16_t tx_size = sizeof(tlm_data_t)+1;

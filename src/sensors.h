@@ -16,19 +16,26 @@ using namespace BLA;
 #define STATUS_FAILED_SETUP 0x02
 #define STATUS_NO_RESPONSE 0x03
 
+#define DT 0.005f
+#define SENSOR_LIDAR_OFFSET 0.08f
+
 typedef struct __attribute__ ((packed)){
     float gx, gy, gz;
     float roll, pitch, yaw;
-    float qw, qi, qj, qk;
     float ax, ay, az;
-    float vx, vy, vz;
-    float x, y, z;
+    float vx, vy;
+    float z;
     struct{ // Bitfield, using 1 byte, to represent if new measurements are available
         uint8_t imu     : 1;
         uint8_t flow    : 1;
         uint8_t lidar   : 1;
     } status;
-} sensor_data_t;
+} sensor_data_t; // 49 bytes
+
+typedef struct __attribute__ ((packed)){
+    float x, y, z;
+    float vx, vy, vz;
+} estimator_data_t; // 24 bytes
 
 typedef struct{
     uint8_t imu;
@@ -60,6 +67,8 @@ public:
     sensor_data_t get_samples();
 
     sensor_data_t data;
+    estimator_data_t estimate;
+
     sensor_status_t status;
 
 private:
@@ -73,6 +82,45 @@ private:
     float LPF( float new_sample, float old_sample, float alpha );
 
     uint32_t last_flow_sample;
+
+
+
+    // Estimator matrixes
+    Matrix<6,6> A = {   1,  0,  0,  DT, 0,  0,
+                        0,  1,  0,  0,  DT, 0,
+                        0,  0,  1,  0,  0,  DT,
+                        0,  0,  0,  1,  0,  0,
+                        0,  0,  0,  0,  1,  0, 
+                        0,  0,  0,  0,  0,  1 };
+
+    Matrix<6,3> B = {   0.5*pow(DT,2),  0,              0,         
+                        0,              0.5*pow(DT,2),  0,         
+                        0,              0,              0.5*pow(DT,2),  
+                        DT,             0,              0,         
+                        0,              DT,             0,         
+                        0,              0,              DT };
+ 
+    Matrix<6,6> H; 
+
+    // State vector
+    Matrix<6,1> X = {0,0,0,0,0,0};
+
+    // Prediction vector
+    Matrix<6,1> Xpre;
+
+    // Measurement vector
+    Matrix<6,1> Z = {0,0,0,0,0,0};
+
+    // Input vector
+    Matrix<3,1> U = {0,0,0};
+
+    // Estimator gain
+    Matrix<6,6> Kf = {  0.0001,    0.0000,    0.0000,    0.0095,   -0.0000,    0.0000,
+                        0.0000,    0.0001,   -0.0000,    0.0000,    0.0095,   -0.0000,
+                        0.0000,   -0.0000,    0.1547,    0.0000,   -0.0000,    0.0000,
+                        0.0000,    0.0000,    0.0000,    0.1057,   -0.0000,    0.0000,
+                       -0.0000,    0.0000,   -0.0000,   -0.0000,    0.1057,   -0.0000,
+                        0.0000,   -0.0000,    1.3001,    0.0000,   -0.0000,    0.0000  };
 
 };
 

@@ -128,15 +128,13 @@ D_red = zeros(8,5);
 
 
 % Reduced model with integral action states
-G_i = [1 0 0 0 0 0 0 0  ; % roll
-       0 1 0 0 0 0 0 0  ; % pitch
-       0 0 0 0 0 0 1 0 ]; % z
+G_i = [ 0 0 0 0 0 0 1 0 ]; % z
    
 A_int = [A_red; G_i];
-A_int = [A_int zeros(11,3) ];
-B_int = [B_red; zeros(3,5) ];
-C_int = eye(11);
-D_int = zeros(11,5);
+A_int = [A_int zeros(9,1) ];
+B_int = [B_red; zeros(1,5) ];
+C_int = eye(9);
+D_int = zeros(9,5);
 
 %% Open Loop dynamics
 
@@ -148,26 +146,24 @@ sys_int = ss(A_int,B_int,C_int, D_int);
 
 % Bryson's Rule. 
 % Max angle of 0.3 radians. Maximum angular rate of 5 rad/second
-Q = [ 1/0.3^2  0        0        0      0      0      0        0       ;  % Roll
-      0        1/0.3^2  0        0      0      0      0        0       ;  % Pitch
-      0        0        1/0.3^2  0      0      0      0        0       ;  % Yaw
-      0        0        0        1/5^2  0      0      0        0       ;  % omega_x
-      0        0        0        0      1/5^2  0      0        0       ;  % omega_y
-      0        0        0        0      0      1/5^2  0        0       ;  % omega_z
-      0        0        0        0      0      0      1/10^2   0       ;  % z
-      0        0        0        0      0      0      0        1/5^2  ]; % v_z
+Q = [ 10^1     0        0        0      0      0      0        0       ;  % Roll
+      0        10^1     0        0      0      0      0        0       ;  % Pitch
+      0        0        10^1     0      0      0      0        0       ;  % Yaw
+      0        0        0        10^0  0      0      0        0       ;  % omega_x
+      0        0        0        0      10^0  0      0        0       ;  % omega_y
+      0        0        0        0      0      10^0  0        0       ;  % omega_z
+      0        0        0        0      0      0      10^-0    0       ;  % z
+      0        0        0        0      0      0      0        10^-0  ]; % v_z
   
 % Integral action  
-Q(9:11,9:11) = [ 0.1   0     0  ;   % roll 
-                 0     0.1   0  ;   % pitch
-                 0     0     5 ]; % z
+Q(9,9) = [ 5 ]; % z
       
 % Max actuation angle of +-10 degress
 R = [ 1/10^2   0       0       0       0       ; % a1
       0        1/10^2  0       0       0       ; % a2
       0        0       1/10^2  0       0       ; % a3
       0        0       0       1/10^2  0       ; % a4
-      0        0       0       0       1/5^2  ]; % wt
+      0        0       0       0       1/1^2  ]; % wt
 
 % Compute "optimal" controller
 K_lqr = lqr(sys_int, Q, R)

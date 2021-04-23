@@ -14,6 +14,10 @@
 #define MOTOR_MIN_DSHOT 0
 #define MOTOR_MAX_DSHOT 1500 // No more is needed to lift aircraft.
 
+// Maps the kRPM output of the controller to DSHOT values. This varies with voltage, thus should probably implement RPM controller at some point
+#define MOTOR_KRPM_TO_DSHOT 72.43f 
+#define CONTROL_LOOP_INTERVAL 0.005f
+
 using namespace BLA;
 
 typedef struct __attribute__ ((packed)){
@@ -37,6 +41,8 @@ public:
 
     void control_attitude( float roll, float pitch, float yaw, float gx, float gy, float gz );
 
+    void control_hover( float roll, float pitch, float yaw, float gx, float gy, float gz, float z, float vz );
+
     void get_rc_signals( void );
 
     uint16_t get_sp_throttle( void );
@@ -58,24 +64,28 @@ private:
 
     // LQR optimal gain for attitude controller
     /* 
-    Matrix<4,6> K = {   13.9069,    0.0000,    9.7404,    4.6030,    0.0000,    2.2943,
-                         0.0000,   13.9069,   -9.7404,    0.0000,    4.6032,   -2.2943,
-                        13.9069,    0.0000,   -9.7404,    4.6030,    0.0000,   -2.2943,
-                         0.0000,   13.9069,    9.7404,    0.0000,    4.6032,    2.2943}; */
-
+    Only attitude controller
     Matrix<4,6> K = {   23.0746,    0.0000,   16.1308,    5.8192,    0.0000,    2.8430,
                          0.0000,   23.0746,  -16.1308,   -0.0000,    5.8195,   -2.8430,
                         23.0746,    0.0000,  -16.1308,    5.8192,    0.0000,   -2.8430,
-                         0.0000,   23.0746,   16.1308,    0.0000,    5.8195,    2.8430};
+                         0.0000,   23.0746,   16.1308,    0.0000,    5.8195,    2.8430}; */
 
-    // State vector for attitude; roll, pitch, yaw, gx, gy, gz
-    Matrix<6,1> X = {0,0,0,0,0,0};
+    // Attitude and altitude controller. With integral action on altitude error.
+    Matrix<5,9> K = {   22.3607,   -0.0000,   15.8114,    8.9976,   -0.0000,    5.6572,   -0.0000,   -0.0000,   -0.0000,
+                        -0.0000,  -22.3607,  -15.8114,   -0.0000,   -8.9978,   -5.6572,   -0.0000,   -0.0000,   -0.0000,
+                        22.3607,    0.0000,  -15.8114,    8.9976,    0.0000,   -5.6572,    0.0000,    0.0000,    0.0000,
+                         0.0000,  -22.3607,   15.8114,    0.0000,   -8.9978,    5.6572,    0.0000,   -0.0000,   -0.0000,
+                        -0.0000,   -0.0000,    0.0000,   -0.0000,   -0.0000,    0.0000,    3.7895,    2.9874,    2.2361 };
+                        // roll    // pitch   // yaw     // gx      // gy       // gz      // z     // vz      // zint
+
+    // State vector roll, pitch, yaw, gx, gy, gz, z, vz, zi
+    Matrix<9,1> X = {0,0,0,0,0,0,0,0,0};
 
     // Actuation vector / output
-    Matrix<4,1> U = {0,0,0,0};
+    Matrix<5,1> U = {0,0,0,0,0};
 
-    // Setpoints for attitude controller
-    Matrix<6,1> SP_rot = {0,0,0,0,0,0};
+    // Setpoints for attitude controller (roll, pitch, yaw, gx, gy, gz, z, vz)
+    Matrix<8,1> SP = {0,0,0,0,0,0,1,0};
 
     // Throttle setpoint (controlled via RC controller)
     uint16_t SP_throttle = 0;

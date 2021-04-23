@@ -9,8 +9,9 @@
 #include "control.h"
 
 typedef struct __attribute__ ((packed)){
-    sensor_data_t x;    // System output (states)
-    control_signal_t u; // System input  (actuation)
+    sensor_data_t data;    // System output (states)
+    estimator_data_t estimate;
+    control_signal_t control; // System input  (actuation)
 } tlm_data_t;
 
 class Logger
@@ -22,10 +23,10 @@ public:
     void init( void );
 
     // For sending telemetry over UART -> ESP -> WIFI
-    void write_esp( sensor_data_t measurements, control_signal_t controls );
+    void write_esp( tlm_data_t package );
 
     // For simple logging on SD card
-    void write_sd( sensor_data_t measurements, control_signal_t controls );
+    // void write_sd( sensor_data_t measurements, control_signal_t controls );
 
     // Starting and ending SD log. Each time called, a new log is created
     void start_log();

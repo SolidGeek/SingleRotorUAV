@@ -20,11 +20,10 @@ void Logger::init(){
     
 }
 
-void Logger::write_esp( sensor_data_t samples, control_signal_t controls ){
+void Logger::write_esp( tlm_data_t package ){
 
     memset(&tx_buffer, 0, sizeof(tx_buffer)); 
-    tx_buffer.x = samples;
-    tx_buffer.u = controls;
+    tx_buffer = package;
 
     // Send struct of data over UART
     transfer->sendDatum( tx_buffer );
@@ -44,7 +43,7 @@ void Logger::end_log(){
     }
 }
 
-void Logger::write_sd( sensor_data_t measurements, control_signal_t controls  ){
+/* void Logger::write_sd( sensor_data_t measurements, control_signal_t controls  ){
 
     if( !is_logging || !sd_ready )
         return;
@@ -58,4 +57,4 @@ void Logger::write_sd( sensor_data_t measurements, control_signal_t controls  ){
     log.write( (uint8_t *) &tx_buffer, sizeof(tx_buffer) );
     log.close();
 
-}
+}*/

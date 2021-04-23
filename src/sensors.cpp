@@ -62,10 +62,46 @@ void Sensors::init(void){
 sensor_data_t Sensors::get_samples( void ){
 
     sensor_data_t temp = data;
-    data.status = {};
+    // data.status = {};
     
     return temp;
 
+}
+
+void Sensors::run_estimator(){
+
+    // Fill H and Z matrix with zeros, until measurements are ready
+    H.Fill(0);
+    Z.Fill(0);
+
+    // Fill input vector with acceleration
+    U << data.ax, data.ay, data.az;
+
+    // Fill measurement vector with data
+    if( data.status.flow == 1){
+        H(3,3) = 1; H(4,4) = 1;
+        Z(3) = data.vx;
+        Z(4) = data.vy;
+    }
+
+    if( data.status.lidar == 1){
+        H(2,2) = 1;
+        Z(2) = data.z;
+    }
+
+    // Prediction, based on previous state and input
+    Xpre = A*X + B*U; 
+
+    // Update prediction with update using measurements 
+    X = Xpre + Kf*(Z - H*Xpre); 
+    
+    // Fill estimate struct with values (for telemetry and stuff)
+    estimate.x = X(0);
+    estimate.y = X(1);
+    estimate.z = X(2);
+    estimate.vx = X(3);
+    estimate.vy = X(4);
+    estimate.vz = X(5);
 }
 
 void Sensors::sample_imu(){
@@ -79,10 +115,6 @@ void Sensors::sample_imu(){
             data.roll   = imu->getRoll();   // Radians
             data.pitch  = imu->getPitch();  // Radians
             data.yaw    = imu->getYaw();    // Radians
-            data.qw = imu->getQuatReal();
-            data.qi = imu->getQuatI();
-            data.qj = imu->getQuatJ();
-            data.qk = imu->getQuatK();
         }
 
         // Linear acceleration is gravity componsated (but still measured in body frame)
@@ -94,16 +126,16 @@ void Sensors::sample_imu(){
             // We are only interested in acceleration in world frame
             rotate_to_world( accel );
 
-            data.ax = accel[0];
-            data.ay = accel[1];
-            data.az = accel[2];
+            data.ax = LPF( accel[0], data.ax, 1 ) ; // Filter coefficient 1 = No lowpass
+            data.ay = LPF( accel[1], data.ay, 1 ) ;
+            data.az = LPF( accel[2], data.az, 0.8 ) ;
         }
 
         // Read Raw Gyro data
         if( report_ID == SENSOR_REPORTID_GYROSCOPE ) {
-            data.gx = LPF( imu->getGyroX(), data.gx, 0.4 ); // Radians / second
-            data.gy = LPF( imu->getGyroY(), data.gy, 0.4 ); // Radians / second
-            data.gz = LPF( imu->getGyroZ(), data.gz, 0.4 ); // Radians / second
+            data.gx = LPF( imu->getGyroX(), data.gx, 0.8 ); // Radians / second
+            data.gy = LPF( imu->getGyroY(), data.gy, 0.8 ); // Radians / second
+            data.gz = LPF( imu->getGyroZ(), data.gz, 0.8 ); // Radians / second
         }
 
         data.status.imu = 1;
@@ -118,7 +150,8 @@ void Sensors::sample_flow()
     float vx, vy;
     float u = data.yaw;
     
-    flow->readMotionCount( &dx, &dy );
+    // Here dy and dx are flipped, to match orientation of IMU (which is placed to align with the body frame)
+    flow->readMotionCount( &dy, &dx );
 
     // Convert flow to velocity and rotate to world frame (assumes flat surface)
     vbx = (float)dx * data.z;
@@ -127,25 +160,35 @@ void Sensors::sample_flow()
     vy = sin(u) * vbx + cos(u) * vby;
 
     // Apply sligth lowpass filter in improve filter performance
-    data.vx = LPF( vx, data.vx, 0.4 ); // meter / second
-    data.vy = LPF( vy, data.vy, 0.4 ); // meter / second
+    data.vx = LPF( vx, data.vx, 1 ); // meter / second
+    data.vy = LPF( vy, data.vy, 1 ); // meter / second
 
     data.status.flow = 1;
 }
 
 void Sensors::sample_lidar(){
 
+    float z, zb;
+
     if( lidar->dataReady() ){
 
         uint16_t value = lidar->read(false); // Non blocking
 
         // Altitude measured in body frame.
-        float zb = ((float)value)/1000; // Convert to meters
+        zb = ((float)value)/1000 - SENSOR_LIDAR_OFFSET; // Convert to meters
+
+        // Sanity check
+        if(zb < 0 )
+            zb = 0;
 
         // Rotate altitude to world frame
-        data.z = zb*cos( data.pitch ) * cos( data.roll );
+        z = zb * cos( data.pitch ) * cos( data.roll );
+
+        data.z = LPF( z , data.z, 1 );
 
         data.status.lidar = 1;
+
+        Serial.println(zb);
 
     }
 
