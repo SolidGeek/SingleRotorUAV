@@ -37,7 +37,7 @@ fb = [ F2 + F4  ;
 % Body torques
 tb = [ (F1 + F3)*l            ;
       -(F2 + F4)*l            ;
-       (F1 - F2 - F3 + F4)*r ];
+       (-F1 + F2 + F3 - F4)*r ];
    
 % State vectors used for derivation
 nw = [p q u].';     % Attitude (world frame)
@@ -148,7 +148,7 @@ sys_int = ss(A_int,B_int,C_int, D_int);
 % Max angle of 0.3 radians. Maximum angular rate of 5 rad/second
 Q = [ 10^1     0        0        0      0      0      0        0       ;  % Roll
       0        10^1     0        0      0      0      0        0       ;  % Pitch
-      0        0        10^1     0      0      0      0        0       ;  % Yaw
+      0        0        10^0    0      0      0      0        0       ;  % Yaw
       0        0        0        10^0  0      0      0        0       ;  % omega_x
       0        0        0        0      10^0  0      0        0       ;  % omega_y
       0        0        0        0      0      10^0  0        0       ;  % omega_z

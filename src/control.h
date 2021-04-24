@@ -43,9 +43,6 @@ public:
 
     void control_hover( float roll, float pitch, float yaw, float gx, float gy, float gz, float z, float vz );
 
-    void get_rc_signals( void );
-
-    uint16_t get_sp_throttle( void );
 
     void servo_calibration( int16_t * servo_offset );
 
@@ -75,29 +72,35 @@ private:
                          0.0000,   23.0746,   16.1308,    0.0000,    5.8195,    2.8430}; */
 
     // Attitude and altitude controller. With integral action on altitude error.
-    Matrix<5,9> K = {   22.3607,   -0.0000,   15.8114,    8.9976,   -0.0000,    5.6572,   -0.0000,   -0.0000,   -0.0000,
-                        -0.0000,  -22.3607,  -15.8114,   -0.0000,   -8.9978,   -5.6572,   -0.0000,   -0.0000,   -0.0000,
-                        22.3607,    0.0000,  -15.8114,    8.9976,    0.0000,   -5.6572,    0.0000,    0.0000,    0.0000,
-                         0.0000,  -22.3607,   15.8114,    0.0000,   -8.9978,    5.6572,    0.0000,   -0.0000,   -0.0000,
-                        -0.0000,   -0.0000,    0.0000,   -0.0000,   -0.0000,    0.0000,    3.7895,    2.9874,    2.2361 };
+    Matrix<5,9> K = {  22.3607,    0.0000,   -5.0000,    8.9976,    0.0000,   -5.2168,    0.0000,    0.0000,    0.0000,
+                        0.0000,  -22.3607,    5.0000,    0.0000,   -8.9978,    5.2168,    0.0000,    0.0000,    0.0000,
+                       22.3607,    0.0000,    5.0000,    8.9976,    0.0000,    5.2168,    0.0000,    0.0000,    0.0000,
+                        0.0000,  -22.3607,   -5.0000,    0.0000,   -8.9978,   -5.2168,    0.0000,    0.0000,    0.0000,
+                        0.0000,    0.0000,    0.0000,    0.0000,    0.0000,    0.0000,    3.7895,    2.9874,    2.2361 };
                         // roll    // pitch   // yaw     // gx      // gy       // gz      // z     // vz      // zint
 
     // State vector roll, pitch, yaw, gx, gy, gz, z, vz, zi
     Matrix<9,1> X = {0,0,0,0,0,0,0,0,0};
 
+    // State Error Vector
+    Matrix<9,1> Xe = {0,0,0,0,0,0,0,0,0};
+
     // Actuation vector / output
     Matrix<5,1> U = {0,0,0,0,0};
 
-    // Setpoints for attitude controller (roll, pitch, yaw, gx, gy, gz, z, vz)
-    Matrix<8,1> SP = {0,0,0,0,0,0,1,0};
-
-    // Throttle setpoint (controlled via RC controller)
-    uint16_t SP_throttle = 1;
+    // Setpoints for attitude controller (roll, pitch, yaw, gx, gy, gz, z, vz, zint)
+    Matrix<9,1> SP = {0,0,0,0,0,0,1,0,0};
 
     uint16_t max_throttle = DSHOT_MAX_OUTPUT;
 
 
+    float error_integral_z = 0;
+
     int16_t servo_offset[4] = {0,0,0,0};
+
+
+    // Low pass filter to filter control outputs
+    float RateLimit( float new_sample, float old_sample, float alpha );
 
 };
 

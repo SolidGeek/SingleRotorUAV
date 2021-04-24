@@ -78,38 +78,51 @@ void Control::write_servo_ms( uint8_t index, uint16_t ms ){
 
 
 void Control::control_hover( float roll, float pitch, float yaw, float gx, float gy, float gz, float z, float vz ){
-
-    // SP(6): z_sp
     
-    float error_z = SP_throttle - z; 
-    float int_z = X(8);
+    Matrix<5,1> output;
 
-    // Some integral windup
+    // Integral action for altitude (z)
+    float error_z = SP(6) - z; 
     if( data.dshot < max_throttle || error_z < 0 )
-        int_z += error_z * CONTROL_LOOP_INTERVAL;
+        error_integral_z += error_z * CONTROL_LOOP_INTERVAL;
 
     // Load states into state-vector (int_z = integral term)
-    X << roll, pitch, yaw, gx, gy, gz, z, vz, int_z;
+    X << roll, pitch, yaw, gx, gy, gz, z, vz, 0;
 
-    U = -K * X; 
+    Xe = SP - X;
+    Xe(8) = error_integral_z; // Insert integral term into the state-error vector
+
+    // Special case for yaw:
+    if( Xe(2) > PI )
+        Xe(2) -= TWO_PI ;
+
+    // Run Controller
+    output = K * Xe; 
+
+    // Filter servo outputs, to limit the rate of change
+    U(0) = RateLimit( output(0), U(0), 0.5 );
+    U(1) = RateLimit( output(1), U(1), 0.5 );
+    U(2) = RateLimit( output(2), U(2), 0.5 );
+    U(3) = RateLimit( output(3), U(3), 0.5 );
+    U(4) = output(4);
 
     write_servo(1, -U(0) );
-    write_servo(2, -U(1) );
+    write_servo(2, U(1) );
     write_servo(3, U(2) );
-    write_servo(0, U(3) ); 
+    write_servo(0, -U(3) ); 
 
     data.a1 = U(0);
     data.a2 = U(1);
     data.a3 = U(2);
     data.a4 = U(3);
     
-    uint16_t control_throttle = (uint16_t)(MOTOR_KRPM_TO_DSHOT * -U(4));
+    
+    uint16_t control_throttle = (uint16_t)(MOTOR_KRPM_TO_DSHOT * U(4));
 
     if( control_throttle >  max_throttle )
         data.dshot = max_throttle;
     else
         data.dshot = control_throttle;
-
 
     write_motor( DSHOT_PORT_1, data.dshot );
     write_motor( DSHOT_PORT_2, data.dshot );
@@ -118,7 +131,7 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
 
 void Control::reset_integral_action( void ){
 
-    X(8) = 0;
+    error_integral_z = 0;
 
 }
 
@@ -144,23 +157,6 @@ void Control::control_attitude( float roll, float pitch, float yaw, float gx, fl
     data.a4 = U(3);
 }
 
-void Control::get_rc_signals( void ) {
-
-    // uint16_t temp_roll = pulseIn( receiver_pins[0], HIGH, 5000);
-    // uint16_t temp_pitch = pulseIn( receiver_pins[2], HIGH, 5000);
-    uint16_t temp_throttle = pulseIn( receiver_pins[1], HIGH, 10000);
-
-    if( temp_throttle != 0){
-        temp_throttle = constrain(temp_throttle, 920, 1920);
-        SP_throttle = map(temp_throttle, 920, 1920, MOTOR_MIN_DSHOT, MOTOR_MAX_DSHOT); // Max at 1500, just to limit the possibility to overload motors.
-    }
-    
-
-}
-
-uint16_t Control::get_sp_throttle( void ){
-    return SP_throttle;
-}
 
 void Control::servo_calibration( int16_t * servo_offset ){
     Serial.println("Performing Servo Calibration. Write OK, when done. ");
@@ -203,4 +199,8 @@ void Control::servo_calibration( int16_t * servo_offset ){
             }
         }
     }
+}
+
+float Control::RateLimit( float new_sample, float old_sample, float alpha ){
+    return ((alpha * new_sample) + (1.0-alpha) * old_sample);  
 }

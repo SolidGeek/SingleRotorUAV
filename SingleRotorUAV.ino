@@ -69,33 +69,21 @@ void loop() {
       
       // Run estimator and control
       sensors.run_estimator();
-      control.control_hover( sensors.data.roll, sensors.data.pitch, 0, sensors.data.gx, sensors.data.gy, 0, sensors.estimate.z, sensors.estimate.vz );
-
-
+      control.control_hover( sensors.data.roll, sensors.data.pitch, sensors.data.yaw, sensors.data.gx, sensors.data.gy, sensors.data.gz , sensors.estimate.z, sensors.estimate.vz );
 
       // Manuel throttle override
       uint16_t temp = constrain(rc_input1, 930, 1910);
       uint16_t rc_throttle = map(temp, 930, 1910, MOTOR_MIN_DSHOT, MOTOR_MAX_DSHOT);
       control.set_max_throttle(rc_throttle);
-      
+
       if( rc_throttle == 0 ){
         control.reset_integral_action();
       }
-
-
 
       // Save control and estimates to tlm.
       tlm.estimate = sensors.estimate;
       tlm.control = control.data;
       logger.write_esp( tlm );
 
-
-
-      Serial.print(rc_throttle);
-      Serial.print(",");
-      Serial.println(control.data.dshot);
-      
-      
-      
     }
 }
