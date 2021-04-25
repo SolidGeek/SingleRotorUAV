@@ -43,6 +43,9 @@ void setup() {
     control.set_servo_offsets( conf.params.servo_offset);
     control.init();
 
+    // control.servo_calibration( conf.params.servo_offset );
+    // conf.save();
+
     // Important to init this last, otherwise IMU's buffer overflow and goes into error state....
     sensors.init();
 

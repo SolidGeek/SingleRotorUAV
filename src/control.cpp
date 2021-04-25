@@ -112,11 +112,6 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
     U(3) = Limit( U(3), -20, 20 );
 
     U(4) = output(4);
-
-
-    Serial.print( output(0) );
-    Serial.print( "," );
-    Serial.println( U(0) );
     
 
     write_servo(1, -U(0) );

@@ -89,7 +89,7 @@ private:
     Matrix<5,1> U = {0,0,0,0,0};
 
     // Setpoints for attitude controller (roll, pitch, yaw, gx, gy, gz, z, vz, zint)
-    Matrix<9,1> SP = {0,0,0,0,0,0,1,0,0};
+    Matrix<9,1> SP = {0,0,0,0,0,0,0.5,0,0};
 
     uint16_t max_throttle = DSHOT_MAX_OUTPUT;
 
