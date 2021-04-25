@@ -37,7 +37,7 @@ fb = [ F2 + F4  ;
 % Body torques
 tb = [ (F1 + F3)*l            ;
       -(F2 + F4)*l            ;
-       (-F1 + F2 + F3 - F4)*r ];
+       (F1 - F2 - F3 + F4)*r ];
    
 % State vectors used for derivation
 nw = [p q u].';     % Attitude (world frame)
@@ -48,9 +48,14 @@ vb = [vx vy vz].';  % Velocity (body frame)
 % Total state vector
 X = [nw; wb; pw; vb];
 X_red = [nw; wb; pw(3); vb(3)]; % Reduced state vector (only attitude and altitude)
+X_hor = [ pw(1); pw(2); vb(1); vb(2) ]; % Reduced state vector for horizontal movements
+
 
 % Input vector 
 U = [a1; a2; a3; a4; wt];
+
+% Input vector for horizontal model
+U_hor = [p; q];
 
 %% Rotational dynamics
 
@@ -77,6 +82,12 @@ f_red = [ nw_dot     ;
           wb_dot     ;
           pw_dot(3)  ;
           vb_dot(3) ];
+      
+% Horizontal non-linear model
+f_hor = [ pw_dot(1) ;
+          pw_dot(2) ;
+          vb_dot(1) ;
+          vb_dot(2)];
   
 %% Linearization
 
@@ -89,6 +100,10 @@ B = jacobian(f, U);
 % Reduced model (only z-axis in position)
 A2 = jacobian(f_red, X_red);
 B2 = jacobian(f_red, U);
+
+% Horizontal model (only x- and y-direction)
+A3 = jacobian( f_hor, X_hor );
+B3 = jacobian( f_hor, U_hor );
 
 % The A and B matrixes are now filled with partial derivatives, similar to
 % an taylor expansion to approximate a nonlinear function/ODE
@@ -126,6 +141,11 @@ B_red = double(vpa(subs(B2), 4));
 C_red = eye(8);
 D_red = zeros(8,5);
 
+% Horizontal model
+A_hor = double(vpa(subs(A3),4));
+B_hor = double(vpa(subs(B3),4));
+C_hor = eye(4);
+D_hor = zeros(4,2);
 
 % Reduced model with integral action states
 G_i = [ 0 0 0 0 0 0 1 0 ]; % z
@@ -141,6 +161,7 @@ D_int = zeros(9,5);
 sys = ss(A_sys,B_sys,C_sys,D_sys);
 sys_red = ss(A_red,B_red,C_red,D_red);
 sys_int = ss(A_int,B_int,C_int, D_int);
+sys_hor = ss(A_hor, B_hor, C_hor, D_hor);
 
 %% Design controller
 
@@ -171,6 +192,16 @@ K_lqr = lqr(sys_int, Q, R)
 % Calcuate closed loop system
 % cl_sys = ss((A_red - B_red*K_lqr), B_red, C_red, D_red );
 
+
+Q_hor = [1/10^3  0       0       0;
+         0      1/10^3   0       0;
+         0      0       1/10^3  0;
+         0      0       0       1/10^3 ];
+     
+R_hor = [1/10^0   0;
+         0         1/10^0];
+
+K_hor = lqr(sys_hor, Q_hor, R_hor)
 
 %% Symbolic Discretization
 
