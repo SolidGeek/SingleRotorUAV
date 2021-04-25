@@ -97,7 +97,7 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
         Xe(2) -= TWO_PI ;
 
     // Run Controller
-    output = K * Xe; 
+    output = K_hover * Xe; 
 
     // Filter servo outputs, to remove unwanted spikes
     U(0) = RateLimit( output(0), U(0), 0.3 );
@@ -137,6 +137,28 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
 
 }
 
+
+void Control::control_position( float x, float y, float vx, float vy ){
+
+    Matrix<2,1> output;
+
+    // Load state vector
+    X_pos << x, y, vx, vy;
+
+    // Run controller
+    output = K_pos * (SP_pos - X_pos);
+
+    // Limit position output to 5 degress in roll and pitch
+    output(0) = Limit( output(0), -5, 5 );
+    output(1) = Limit( output(1), -5, 5 );
+
+
+    // Use the output of the positional controller as setpoints for the hover controller
+    SP(0) = output(0);
+    SP(1) = output(1);
+
+}
+
 void Control::reset_integral_action( void ){
 
     error_integral_z = 0;
@@ -145,24 +167,6 @@ void Control::reset_integral_action( void ){
 
 void Control::set_max_throttle( uint16_t dshot ){
     max_throttle = dshot;
-}
-
-void Control::control_attitude( float roll, float pitch, float yaw, float gx, float gy, float gz ){
-
-    // Load states into state-vector
-    X << roll, pitch, yaw, gx, gy, gz;
-
-    U = -K * X;
-    
-    write_servo(1, -U(0) );
-    write_servo(2, -U(1) );
-    write_servo(3, U(2) );
-    write_servo(0, U(3) ); 
-
-    data.a1 = U(0);
-    data.a2 = U(1);
-    data.a3 = U(2);
-    data.a4 = U(3);
 }
 
 

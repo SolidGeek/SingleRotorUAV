@@ -154,8 +154,8 @@ void Sensors::sample_flow()
     flow->readMotionCount( &dy, &dx );
 
     // Convert flow to velocity and rotate to world frame (assumes flat surface)
-    vbx = (float)dx * data.z * 0.4; // 0.4 = scaling factor found experimentally
-    vby = (float)dy * data.z * 0.4;
+    vbx = (float)dx * data.z * 0.5; // 0.5 = scaling factor found experimentally
+    vby = (float)dy * data.z * 0.5;
     vx = cos(u) * vbx - sin(u) * vby;
     vy = sin(u) * vbx + cos(u) * vby;
 
