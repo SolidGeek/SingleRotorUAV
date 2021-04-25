@@ -99,12 +99,25 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
     // Run Controller
     output = K * Xe; 
 
-    // Filter servo outputs, to limit the rate of change
-    U(0) = RateLimit( output(0), U(0), 0.5 );
-    U(1) = RateLimit( output(1), U(1), 0.5 );
-    U(2) = RateLimit( output(2), U(2), 0.5 );
-    U(3) = RateLimit( output(3), U(3), 0.5 );
+    // Filter servo outputs, to remove unwanted spikes
+    U(0) = RateLimit( output(0), U(0), 0.3 );
+    U(1) = RateLimit( output(1), U(1), 0.3 );
+    U(2) = RateLimit( output(2), U(2), 0.3 );
+    U(3) = RateLimit( output(3), U(3), 0.3 );
+
+    // Saturate outputs to reduce control bleps
+    U(0) = Limit( U(0), -20, 20 );
+    U(1) = Limit( U(1), -20, 20 );
+    U(2) = Limit( U(2), -20, 20 );
+    U(3) = Limit( U(3), -20, 20 );
+
     U(4) = output(4);
+
+
+    Serial.print( output(0) );
+    Serial.print( "," );
+    Serial.println( U(0) );
+    
 
     write_servo(1, -U(0) );
     write_servo(2, U(1) );
@@ -203,4 +216,21 @@ void Control::servo_calibration( int16_t * servo_offset ){
 
 float Control::RateLimit( float new_sample, float old_sample, float alpha ){
     return ((alpha * new_sample) + (1.0-alpha) * old_sample);  
+}
+
+
+float Control::Limit( float value, float min, float max ){
+    float output;
+
+    if( value > max ){
+        output = max;
+    }
+    else if ( value < min ){
+        output = min;
+    }
+    else{
+        output = value;
+    }
+
+    return output;
 }

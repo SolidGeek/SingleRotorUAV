@@ -102,6 +102,8 @@ private:
     // Low pass filter to filter control outputs
     float RateLimit( float new_sample, float old_sample, float alpha );
 
+    float Limit( float value, float min, float max );
+
 };
 
 
