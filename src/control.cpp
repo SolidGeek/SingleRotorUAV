@@ -138,15 +138,23 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
 }
 
 
-void Control::control_position( float x, float y, float vx, float vy ){
+void Control::control_position( float x, float y, float vx, float vy, float yaw ){
 
     Matrix<2,1> output;
+    Matrix<2,1> error;
 
     // Load state vector
     X_pos << x, y, vx, vy;
 
+    // Calculate error
+    error = (SP_pos - X_pos);
+
+    // Rotate error to body (assuming hover state, roll = 0, pitch = 0)
+    error(0) = error(0)*cos(yaw) - error(1)*sin(yaw);
+    error(1) = error(1)*cos(yaw) + error(0)*sin(yaw);
+
     // Run controller
-    output = K_pos * (SP_pos - X_pos);
+    output = K_pos * error;
 
     // Limit position output to 5 degress in roll and pitch
     output(0) = Limit( output(0), -5, 5 );
