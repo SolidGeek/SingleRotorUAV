@@ -1,7 +1,7 @@
 % First run record.m, to sample data from UDP
 % Next run this 
 
-% load('walk_test_data_1.mat')
+load('walk_test_2_square_kalman.mat')
 
 
 %% Data Import
