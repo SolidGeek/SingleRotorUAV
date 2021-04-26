@@ -44,7 +44,7 @@ public:
     // Controller functions
     void control_hover( float roll, float pitch, float yaw, float gx, float gy, float gz, float z, float vz );
 
-    void control_position( float x, float y, float vx, float vy );
+    void control_position( float x, float y, float vx, float vy, float yaw );
 
     void reset_integral_action( void );
 
@@ -83,8 +83,8 @@ private:
                         // roll    // pitch   // yaw     // gx      // gy       // gz      // z     // vz      // zint
 
     // Position controller
-    Matrix<2,4> K_pos = {   0.0000,   -0.0316,   0.0000,   -0.0863,
-                            0.0316,    0.0000,   0.0863,    0.0000} ;
+    Matrix<2,4> K_pos = {   0.0000,   -0.0500,    0.0000,   -0.1127,
+                            0.0500,    0.0000,    0.1127,    0.0000 };
                             // x       // y      // vx      // vy
 
     // State vector roll, pitch, yaw, gx, gy, gz, z, vz, zi

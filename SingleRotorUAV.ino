@@ -72,8 +72,8 @@ void loop() {
       
       // Run estimator and control
       sensors.run_estimator();
-      control.control_position( sensors.estimate.x, sensors.estimate.y, sensors.estimate.vx, sensors.estimate.vy );
-      control.control_hover( sensors.data.roll, sensors.data.pitch, sensors.data.yaw, sensors.data.gx, sensors.data.gy, sensors.data.gz , sensors.estimate.z, sensors.estimate.vz );
+      control.control_position( sensors.estimate.x, sensors.estimate.y, sensors.estimate.vx, sensors.estimate.vy, sensors.data.yaw );
+      control.control_hover( sensors.data.roll, sensors.data.pitch, sensors.data.yaw, sensors.data.gx, sensors.data.gy, sensors.data.gz , sensors.estimate.z, sensors.estimate.vz  );
 
       // Manuel throttle override
       uint16_t temp = constrain(rc_input1, 930, 1910);

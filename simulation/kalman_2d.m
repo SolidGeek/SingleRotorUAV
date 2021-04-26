@@ -1,7 +1,7 @@
 % First run record.m, to sample data from UDP
 % Next run this 
 
-load('walk_test_2_square_kalman.mat')
+% load('walk_test_2_square_kalman.mat')
 
 
 %% Data Import
@@ -148,4 +148,5 @@ title("Position (world)");
 legend("Kalman");
 xlabel("x [m]");
 ylabel("y [m]");
+axis equal
 grid on

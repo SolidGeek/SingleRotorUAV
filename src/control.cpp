@@ -141,7 +141,7 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
 void Control::control_position( float x, float y, float vx, float vy, float yaw ){
 
     Matrix<2,1> output;
-    Matrix<2,1> error;
+    Matrix<4,1> error;
 
     // Load state vector
     X_pos << x, y, vx, vy;
@@ -150,20 +150,27 @@ void Control::control_position( float x, float y, float vx, float vy, float yaw 
     error = (SP_pos - X_pos);
 
     // Rotate error to body (assuming hover state, roll = 0, pitch = 0)
-    error(0) = error(0)*cos(yaw) - error(1)*sin(yaw);
-    error(1) = error(1)*cos(yaw) + error(0)*sin(yaw);
+    error(0) = error(0)*cos(yaw) + error(1)*sin(yaw);  // x
+    error(1) = error(1)*cos(yaw) - error(0)*sin(yaw);  // y
+    error(2) = error(2)*cos(yaw) + error(3)*sin(yaw);  // vx
+    error(3) = error(3)*cos(yaw) - error(2)*sin(yaw);  // vy
 
     // Run controller
     output = K_pos * error;
 
-    // Limit position output to 5 degress in roll and pitch
-    output(0) = Limit( output(0), -5, 5 );
-    output(1) = Limit( output(1), -5, 5 );
+    // Limit position output to 10 degress in roll and pitch 
+    output(0) = Limit( output(0), -10 * DEG_TO_RAD, 10 * DEG_TO_RAD );
+    output(1) = Limit( output(1), -10 * DEG_TO_RAD, 10 * DEG_TO_RAD );
 
+
+    Serial.print( output(0) * RAD_TO_DEG );
+    Serial.print(",");
+    Serial.println( output(1) * RAD_TO_DEG );
 
     // Use the output of the positional controller as setpoints for the hover controller
-    SP(0) = output(0);
-    SP(1) = output(1);
+    // Outputs are flipped because of sensor orientation
+    SP(0) = -output(1);
+    SP(1) = output(0);
 
 }
 
