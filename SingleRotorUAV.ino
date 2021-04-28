@@ -58,6 +58,14 @@ void loop() {
     sensors.sample_imu();
     sensors.sample_lidar();
 
+
+    if( Serial3.available() ){
+      while( Serial3.available() ){
+        Serial.print( Serial3.read() );  
+      }
+      Serial.println();
+    }
+
     if( micros() - flow_timer >= 10000 ){
       flow_timer = micros();
       // The flow sensor outputs delta changes, needs to be sampled at semi-constant interval

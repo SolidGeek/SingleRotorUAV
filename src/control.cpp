@@ -162,11 +162,6 @@ void Control::control_position( float x, float y, float vx, float vy, float yaw 
     output(0) = Limit( output(0), -10 * DEG_TO_RAD, 10 * DEG_TO_RAD );
     output(1) = Limit( output(1), -10 * DEG_TO_RAD, 10 * DEG_TO_RAD );
 
-
-    Serial.print( output(0) * RAD_TO_DEG );
-    Serial.print(",");
-    Serial.println( output(1) * RAD_TO_DEG );
-
     // Use the output of the positional controller as setpoints for the hover controller
     // Outputs are flipped because of sensor orientation
     SP(0) = -output(1);

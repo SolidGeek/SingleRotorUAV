@@ -32,7 +32,7 @@ typedef struct __attribute__ ((packed)){
     control_signal_t control; // System input  (actuation)
 } tlm_data_t;
 
-// Create struct to act as RX buffer
+// Create struct to act as Serial RX buffer
 tlm_data_t rx_buffer; 
 
 const uint16_t tx_size = sizeof(tlm_data_t)+1;
@@ -40,6 +40,7 @@ const uint16_t udp_buffer_size = tx_size*1; // Room for 1 udp_packages
 uint8_t tx_buffer[udp_buffer_size]; 
 uint16_t tx_index = 0;
 
+char udp_rx_buffer[255]; //buffer to hold incoming packet
 
 int led_pin = 12;
 
@@ -57,14 +58,26 @@ SerialTransfer UART;
 void setup() {
   Serial.begin(921600);
   UART.begin(Serial);
-  
+
   pinMode(led_pin, OUTPUT);
 
   WiFi.softAP(ssid, password);
+
+  // To read UDP packages from PC (commands, external position data etc)
+  UDP.begin(UDP_port);
 }
 
 void loop(){
 
+  // Read UDP packages from client
+  int udp_packet_size = UDP.parsePacket();
+
+  if (udp_packet_size) {
+    int len = UDP.read(udp_rx_buffer, 255);  
+    // Send the data to Teensy
+    Serial.write( udp_rx_buffer, len );
+  }
+  
   if( tx_index >= udp_buffer_size ){
 
     // Send that big boi
