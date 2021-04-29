@@ -49,7 +49,7 @@ void setup() {
 
     // Important to init this last, otherwise IMU's buffer overflow and goes into error state....
     sensors.init();
-
+    
     Serial.println("Ready");
 }
 
@@ -65,6 +65,23 @@ void loop() {
     if( cmd >= 0 ){
       float cmd_value = comm.get_command_value();
       switch( cmd ){
+
+        case COMMAND_LAND:
+          control.set_position_z( 0 );
+        break;
+
+        case COMMAND_TAKEOFF:
+          control.set_position_z( cmd_value );
+        break;
+        
+        case COMMAND_SETPOINT_X:
+          control.set_position_x( cmd_value );
+        break;
+
+        case COMMAND_SETPOINT_Y:
+          control.set_position_y( cmd_value );
+        break;
+        
         case COMMAND_SET_ORIGIN:
           sensors.set_origin();
         break;  

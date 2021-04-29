@@ -82,14 +82,14 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
     Matrix<5,1> output;
 
     // Integral action for altitude (z)
-    float error_z = SP(6) - z; 
+    float error_z = SP_hover(6) - z; 
     if( data.dshot < max_throttle || error_z < 0 )
         error_integral_z += error_z * CONTROL_LOOP_INTERVAL;
 
     // Load states into state-vector (int_z = integral term)
     X << roll, pitch, yaw, gx, gy, gz, z, vz, 0;
 
-    Xe = SP - X;
+    Xe = SP_hover - X;
     Xe(8) = error_integral_z; // Insert integral term into the state-error vector
 
     // Special case for yaw:
@@ -138,6 +138,18 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
 }
 
 
+void Control::set_position_x( float x ){
+    SP_pos(0) = x;
+}
+
+void Control::set_position_y( float y ){
+    SP_pos(1) = y;
+}
+
+void Control::set_position_z( float z ){
+    SP_hover(6) = z;
+}
+
 void Control::control_position( float x, float y, float vx, float vy, float yaw ){
 
     Matrix<2,1> output;
@@ -159,13 +171,13 @@ void Control::control_position( float x, float y, float vx, float vy, float yaw 
     output = K_pos * error;
 
     // Limit position output to 10 degress in roll and pitch 
-    output(0) = Limit( output(0), -10 * DEG_TO_RAD, 10 * DEG_TO_RAD );
-    output(1) = Limit( output(1), -10 * DEG_TO_RAD, 10 * DEG_TO_RAD );
+    output(0) = Limit( output(0), -5 * DEG_TO_RAD, 5 * DEG_TO_RAD );
+    output(1) = Limit( output(1), -5 * DEG_TO_RAD, 5 * DEG_TO_RAD );
 
     // Use the output of the positional controller as setpoints for the hover controller
     // Outputs are flipped because of sensor orientation
-    SP(0) = -output(1);
-    SP(1) = output(0);
+    SP_hover(0) = -output(1);
+    SP_hover(1) = output(0);
 
 }
 
@@ -222,6 +234,9 @@ void Control::servo_calibration( int16_t * servo_offset ){
         }
     }
 }
+
+
+
 
 float Control::RateLimit( float new_sample, float old_sample, float alpha ){
     return ((alpha * new_sample) + (1.0-alpha) * old_sample);  

@@ -158,8 +158,8 @@ void Sensors::sample_flow()
     flow->readMotionCount( &dy, &dx );
 
     // Convert flow to velocity and rotate to world frame (assumes flat surface)
-    vbx = (float)dx * data.z * 0.5; // 0.5 = scaling factor found experimentally
-    vby = (float)dy * data.z * 0.5;
+    vbx = (float)dx * data.z * 0.24; // 0.24 = scaling factor found experimentally
+    vby = (float)dy * data.z * 0.24;
     vx = cos(u) * vbx - sin(u) * vby;
     vy = sin(u) * vbx + cos(u) * vby;
 
@@ -204,12 +204,8 @@ float Sensors::LPF( float new_sample, float old_sample, float alpha ){
 
 void Sensors::set_origin(){
     yaw_origin = yaw_raw;
-    estimate.x = 0;
-    estimate.y = 0;
-    estimate.z = 0;
-    estimate.vx = 0;
-    estimate.vy = 0;
-    estimate.vz = 0;
+
+    X.Fill(0);
 }
 
 

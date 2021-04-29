@@ -50,11 +50,16 @@ public:
 
     void set_max_throttle( uint16_t dshot );
 
+    void set_position_x( float x );
+    void set_position_y( float y );
+    void set_position_z( float z );
 
     // Calibration
     void servo_calibration( int16_t * servo_offset );
 
     void set_servo_offsets( int16_t * servo_offset );
+
+    
 
     // Used for telemetry only (read and debugging of actuation signals)
     control_signal_t data; 
@@ -100,7 +105,7 @@ private:
     Matrix<5,1> U = {0,0,0,0,0};
 
     // Setpoints for attitude controller (roll, pitch, yaw, gx, gy, gz, z, vz, zint)
-    Matrix<9,1> SP = {0,0,0,0,0,0,0.5,0,0};
+    Matrix<9,1> SP_hover = {0,0,0,0,0,0,0,0,0};
 
     Matrix<4,1> SP_pos = {0,0,0,0};
 
