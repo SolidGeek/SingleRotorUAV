@@ -1,12 +1,12 @@
 #include "src/config.h"
 #include "src/sensors.h"
 #include "src/control.h"
-#include "src/logger.h"
+#include "src/communication.h"
 
 Config conf;
 Sensors sensors;
 Control control;
-Logger logger;
+Communication comm;
 
 // Create struct for telemetry/logging
 tlm_data_t tlm;
@@ -19,6 +19,7 @@ uint16_t rc_input1;
 elapsedMicros rc_input1_timer;
 
 uint16_t throttle = 0;
+int cmd;
 
 void rc_input1_interrupt(){
    if( digitalReadFast(rc_input1_pin) == HIGH )
@@ -33,8 +34,8 @@ void setup() {
 
     attachInterrupt( rc_input1_pin, rc_input1_interrupt, CHANGE );
 
-    // Prepare telemetry and logger
-    logger.init();
+    // Prepare communication for telemetry and commands
+    comm.init();
 
     // Load configuration from memorys
     conf.load();
@@ -52,18 +53,28 @@ void setup() {
     Serial.println("Ready");
 }
 
+
+
 void loop() {
 
     // Sample IMU and LIDAR (sample rate is limited by sensors)
     sensors.sample_imu();
     sensors.sample_lidar();
 
+    cmd = comm.read_udp_commands();
+    if( cmd >= 0 ){
+      float cmd_value = comm.get_command_value();
+      switch( cmd ){
+        case COMMAND_SET_ORIGIN:
+          sensors.set_origin();
+        break;  
 
-    if( Serial3.available() ){
-      while( Serial3.available() ){
-        Serial.print( Serial3.read() );  
+        default:
+          /* Serial.print("Unknown command: ");
+          Serial.print( cmd ); Serial.print( " - With data: " );
+          Serial.println( cmd_value ); */
+        break;
       }
-      Serial.println();
     }
 
     if( micros() - flow_timer >= 10000 ){
@@ -95,7 +106,7 @@ void loop() {
       // Save control and estimates to tlm.
       tlm.estimate = sensors.estimate;
       tlm.control = control.data;
-      logger.write_esp( tlm );
+      comm.write_udp_telemetry( tlm );
 
     }
 }

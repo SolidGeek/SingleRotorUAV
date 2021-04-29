@@ -59,10 +59,12 @@ public:
 
     void sample_flow();
 
+    void set_origin();
+
     // If interpolated measurements are needed, maybe Kalman.
     void run_estimator();
 
-    void rotate_to_world( float * vector );
+
 
     sensor_data_t get_samples();
 
@@ -78,8 +80,16 @@ private:
     PMW3901 * flow; 
     VL53L1X * lidar; 
 
+
+    float yaw_origin = 0;
+    float yaw_raw = 0;
+
     // Low pass filter to filter sensor data
     float LPF( float new_sample, float old_sample, float alpha );
+
+    void rotate_to_world( float * vector );
+
+    float rotate_yaw( float yaw );
 
     uint32_t last_flow_sample;
 

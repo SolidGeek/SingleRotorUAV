@@ -68,6 +68,8 @@ sensor_data_t Sensors::get_samples( void ){
 
 }
 
+
+
 void Sensors::run_estimator(){
 
     // Fill H and Z matrix with zeros, until measurements are ready
@@ -114,7 +116,9 @@ void Sensors::sample_imu(){
         if( report_ID == SENSOR_REPORTID_ROTATION_VECTOR ){
             data.roll   = imu->getRoll();   // Radians
             data.pitch  = imu->getPitch();  // Radians
-            data.yaw    = imu->getYaw();    // Radians
+            yaw_raw     = imu->getYaw();    // Radians
+
+            data.yaw = rotate_yaw( yaw_raw );
         }
 
         // Linear acceleration is gravity componsated (but still measured in body frame)
@@ -194,6 +198,33 @@ void Sensors::sample_lidar(){
 
 float Sensors::LPF( float new_sample, float old_sample, float alpha ){
     return ((alpha * new_sample) + (1.0-alpha) * old_sample);  
+}
+
+
+
+void Sensors::set_origin(){
+    yaw_origin = yaw_raw;
+    estimate.x = 0;
+    estimate.y = 0;
+    estimate.z = 0;
+    estimate.vx = 0;
+    estimate.vy = 0;
+    estimate.vz = 0;
+}
+
+
+// Rotate yaw to align with origin / home
+float Sensors::rotate_yaw( float yaw ){
+
+    float rotated = yaw - yaw_origin;
+
+    if( rotated > PI )
+        rotated -= TWO_PI;
+    else if( rotated < -PI )
+        rotated += TWO_PI;
+    
+    return rotated;
+
 }
 
 void Sensors::rotate_to_world( float * vector ){

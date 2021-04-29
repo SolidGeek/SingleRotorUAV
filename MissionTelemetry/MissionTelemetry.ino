@@ -3,44 +3,58 @@
 #include "SerialTransfer.h"
 
 /* --- Data structs for telemetry --- */
-typedef struct __attribute__ ((packed)){
-    float gx, gy, gz;
-    float roll, pitch, yaw;
-    float ax, ay, az;
-    float vx, vy;
-    float z;
-    struct{ // Bitfield, using 1 byte, to represent if new measurements are available
-        uint8_t imu     : 1;
-        uint8_t flow    : 1;
-        uint8_t lidar   : 1;
-    } status;
+typedef struct __attribute__ ((packed)) {
+  float gx, gy, gz;
+  float roll, pitch, yaw;
+  float ax, ay, az;
+  float vx, vy;
+  float z;
+  struct { // Bitfield, using 1 byte, to represent if new measurements are available
+    uint8_t imu     : 1;
+    uint8_t flow    : 1;
+    uint8_t lidar   : 1;
+  } status;
 } sensor_data_t;
 
-typedef struct __attribute__ ((packed)){
-    float x, y, z;
-    float vx, vy, vz;
+typedef struct __attribute__ ((packed)) {
+  float x, y, z;
+  float vx, vy, vz;
 } estimator_data_t;
 
-typedef struct __attribute__ ((packed)){
+typedef struct __attribute__ ((packed)) {
   float a1, a2, a3, a4;   // Servo angles
   uint16_t dshot;         // Motor signal
 } control_signal_t;
 
-typedef struct __attribute__ ((packed)){
-    sensor_data_t data;    // System output (states)
-    estimator_data_t estimate;
-    control_signal_t control; // System input  (actuation)
+typedef struct __attribute__ ((packed)) {
+  sensor_data_t data;    // System output (states)
+  estimator_data_t estimate;
+  control_signal_t control; // System input  (actuation)
 } tlm_data_t;
 
+
+typedef struct __attribute__ ((package)) {
+  uint8_t command;
+  float value;
+} command_t;
+
+
 // Create struct to act as Serial RX buffer
-tlm_data_t rx_buffer; 
+tlm_data_t telemetry_buffer;
 
-const uint16_t tx_size = sizeof(tlm_data_t)+1;
-const uint16_t udp_buffer_size = tx_size*1; // Room for 1 udp_packages
-uint8_t tx_buffer[udp_buffer_size]; 
-uint16_t tx_index = 0;
+command_t command_buffer;
 
-char udp_rx_buffer[255]; //buffer to hold incoming packet
+// Create union
+union{
+  float data;
+  uint8_t bytes[4];
+} command_to_float; 
+
+int16_t command_packet_size;
+
+const uint16_t udp_tlm_size = sizeof(tlm_data_t) + 1;
+uint8_t udp_tx_buffer[udp_tlm_size]; // buffer to hold bytes before transmission
+uint8_t udp_rx_buffer[5];           // buffer to hold incoming packet
 
 int led_pin = 12;
 
@@ -53,59 +67,66 @@ const int UDP_port = 8888;
 
 //The udp library class
 WiFiUDP UDP;
-SerialTransfer UART;
+SerialTransfer uart_transfer;
 
 void setup() {
-  Serial.begin(921600);
-  UART.begin(Serial);
-
   pinMode(led_pin, OUTPUT);
 
-  WiFi.softAP(ssid, password);
+  Serial.begin(921600);
+  uart_transfer.begin(Serial);
 
-  // To read UDP packages from PC (commands, external position data etc)
+  // To read and send UDP packages to and from PC (commands, external position data etc)
+  WiFi.softAP(ssid, password);
   UDP.begin(UDP_port);
 }
 
-void loop(){
+void loop() {
 
-  // Read UDP packages from client
-  int udp_packet_size = UDP.parsePacket();
+  // UDP Commands from PC 
+  if ( command_packet_size = UDP.parsePacket() ){
 
-  if (udp_packet_size) {
-    int len = UDP.read(udp_rx_buffer, 255);  
-    // Send the data to Teensy
-    Serial.write( udp_rx_buffer, len );
-  }
-  
-  if( tx_index >= udp_buffer_size ){
+    int8_t len = UDP.read( udp_rx_buffer, sizeof(udp_rx_buffer) );
 
-    // Send that big boi
-    UDP.beginPacket( UDP_address, UDP_port );
-    UDP.write(tx_buffer, udp_buffer_size );
-    UDP.endPacket();
-    
-    memset( tx_buffer, 0, tx_size );
-    tx_index = 0;
-  }
+    // If a correct sized data is read, send this to Teensy
+    if( len == sizeof( udp_rx_buffer ) ){
 
-  if( UART.available() ){
-    // Read object into rx_buffer
-    UART.rxObj( rx_buffer );
-    
-    // Transfer data from rx_buffer to tx_buffer 
-    uint8_t * rx_buffer_ptr = (uint8_t*)&rx_buffer;
+      // First byte is command
+      command_buffer.command = udp_rx_buffer[0];
 
-    // Start with Sync Word used by Telemetry Viewer
-    tx_buffer[tx_index++] = 0xAA;
-    // Fill in the rest
-    for(uint8_t i = 0; i < sizeof(tlm_data_t); i++ ){
-      tx_buffer[tx_index++] = *rx_buffer_ptr++;
+      // Next 4 bytes is value. Convert to float
+      memcpy( command_to_float.bytes, &udp_rx_buffer[1], 4 );
+      command_buffer.value = command_to_float.data;
+
+      // Send struct over UART to Teensy
+      uart_transfer.sendDatum( command_buffer );
     }
   }
 
-  if( WiFi.softAPgetStationNum() > 0 ){
-    digitalWrite(led_pin, HIGH);  
-  }else
-    digitalWrite(led_pin, LOW);  
+  // Serial structs from Teensy (telemetry)
+  if ( uart_transfer.available() ) {
+    // Read object into telemetry_buffer
+    uart_transfer.rxObj( telemetry_buffer );
+
+    // Transfer data from telemetry_buffer to udp_tx_buffer
+    uint16_t tx_index = 0;
+    uint8_t * buffer_ptr = (uint8_t*)&telemetry_buffer;
+    
+    // Start with Sync Word (used by Telemetry Viewer)
+    udp_tx_buffer[tx_index++] = 0xAA;
+    // Fill in the rest
+    for (uint8_t i = 0; i < sizeof(tlm_data_t); i++ ) {
+      udp_tx_buffer[tx_index++] = *buffer_ptr++;
+    }
+
+    // Send packet over UDP to PC
+    UDP.beginPacket( UDP_address, UDP_port );
+    UDP.write(udp_tx_buffer, udp_tlm_size );
+    UDP.endPacket();
+  }
+  
+  // Indicate that Wifi is connected to client
+  if ( WiFi.softAPgetStationNum() > 0 ) {
+    digitalWrite(led_pin, HIGH);
+  } else
+    digitalWrite(led_pin, LOW);
 }
