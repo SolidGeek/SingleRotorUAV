@@ -157,7 +157,7 @@ void Sensors::sample_flow()
     // Here dy and dx are flipped, to match orientation of IMU (which is placed to align with the body frame)
     flow->readMotionCount( &dy, &dx );
 
-    // Convert flow to velocity and rotate to world frame (assumes flat surface)
+    // Convert flow to velocity and rotate to world frame (assumes flat earth)
     vbx = (float)dx * data.z * 0.24; // 0.24 = scaling factor found experimentally
     vby = (float)dy * data.z * 0.24;
     vx = cos(u) * vbx - sin(u) * vby;

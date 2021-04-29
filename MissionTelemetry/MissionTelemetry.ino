@@ -65,6 +65,10 @@ const char* password = "123456789";
 const char * UDP_address = "255.255.255.255";
 const int UDP_port = 8888;
 
+
+uint32_t blink_timer = 0;
+bool blink_state = LOW;
+
 //The udp library class
 WiFiUDP UDP;
 SerialTransfer uart_transfer;
@@ -127,6 +131,12 @@ void loop() {
   // Indicate that Wifi is connected to client
   if ( WiFi.softAPgetStationNum() > 0 ) {
     digitalWrite(led_pin, HIGH);
-  } else
-    digitalWrite(led_pin, LOW);
+  } else{
+    if( millis() - blink_timer > 500 ){
+      blink_timer = millis();
+      blink_state = !blink_state;
+      digitalWrite(led_pin, blink_state );
+    } 
+    // Alternate the LED to indicate WiFi is ready..
+  }
 }
