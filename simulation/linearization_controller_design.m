@@ -156,24 +156,37 @@ B_int = [B_red; zeros(1,5) ];
 C_int = eye(9);
 D_int = zeros(9,5);
 
+
+% Horizontal model with integral action states
+G_hi = [ 1 0 0 0; 
+         0 1 0 0 ];
+
+A_hint = [A_hor; G_hi];
+A_hint = [A_hint zeros(6,2) ];
+B_hint = [B_hor; zeros(2,2) ];
+C_hint = eye(6);
+D_hint = zeros(6,2);
+     
+     
 %% Open Loop dynamics
 
 sys = ss(A_sys,B_sys,C_sys,D_sys);
 sys_red = ss(A_red,B_red,C_red,D_red);
 sys_int = ss(A_int,B_int,C_int, D_int);
 sys_hor = ss(A_hor, B_hor, C_hor, D_hor);
+sys_hint = ss(A_hint, B_hint, C_hint, D_hint);
 
 %% Design controller
 
 % Bryson's Rule. 
 % Max angle of 0.3 radians. Maximum angular rate of 5 rad/second
-Q = [ 10^1     0        0        0      0      0      0        0       ;  % Roll
-      0        10^1     0        0      0      0      0        0       ;  % Pitch
+Q = [ 4*10^1     0        0        0      0      0      0        0       ;  % Roll
+      0        4*10^1     0        0      0      0      0        0       ;  % Pitch
       0        0        10^0    0      0      0      0        0       ;  % Yaw
       0        0        0        10^0  0      0      0        0       ;  % omega_x
       0        0        0        0      10^0  0      0        0       ;  % omega_y
       0        0        0        0      0      10^0  0        0       ;  % omega_z
-      0        0        0        0      0      0      10^-0    0       ;  % z
+      0        0        0        0      0      0      10^0    0       ;  % z
       0        0        0        0      0      0      0        10^-0  ]; % v_z
   
 % Integral action  
@@ -187,21 +200,28 @@ R = [ 1/10^2   0       0       0       0       ; % a1
       0        0       0       0       1/1^2  ]; % wt
 
 % Compute "optimal" controller
-K_lqr = lqr(sys_int, Q, R)
+K_lqr = lqr(sys_int, Q, R);
+
+matrix_to_cpp( K_lqr )
 
 % Calcuate closed loop system
 % cl_sys = ss((A_red - B_red*K_lqr), B_red, C_red, D_red );
 
 
-Q_hor = [1/10^2  0       0       0;
-         0      1/10^2   0       0;
-         0      0       1/10^2  0;
-         0      0       0       1/10^2 ];
+Q_hor = [1/5^2  0       0       0;
+         0      1/5^2   0       0;
+         0      0       1/1.5^2  0;
+         0      0       0       1/1.5^2 ];
      
-R_hor = [1/0.5^2   0;
-         0         1/0.5^2];
+Q_hor(5:6,5:6) = [0.05  0
+                  0   0.05];
+     
+R_hor = [1/0.1^2   0;
+         0         1/0.1^2];
 
-K_hor = lqr(sys_hor, Q_hor, R_hor)
+K_hint = lqr(sys_hint, Q_hor, R_hor);
+
+matrix_to_cpp( K_hint )
 
 %% Symbolic Discretization
 
@@ -210,3 +230,26 @@ K_hor = lqr(sys_hor, Q_hor, R_hor)
 % 
 % Ad = M(1:12, 1:12);
 % Bd = M(1:12, 13:17);
+
+
+function matrix_to_cpp( matrix )
+
+    name = inputname(1);
+    [m, n] = size(matrix);
+    
+    tol = 1.e-6;
+    matrix(matrix<0 & matrix>-tol) = 0;
+    
+    fprintf('Matrix %s \n', name);
+    
+    for i = 1:m
+        line = string();
+        for j = 1:n
+            str = sprintf('%.3f,', round( matrix(i,j), 3 ) );
+            value = pad(str, 10, 'left');
+
+            line = append( line, value );
+        end
+        disp(line);
+    end
+end

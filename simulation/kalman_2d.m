@@ -1,7 +1,7 @@
 % First run record.m, to sample data from UDP
 % Next run this 
 
-load('walking_test_with_vicon_data.mat')
+% load('walking_test_with_vicon_data.mat')
 
 
 %% Data Import
@@ -24,6 +24,10 @@ z = [data.z];
 % Measured flow data (rotated with yaw)
 vx = [data.vx];
 vy = [data.vy];
+
+% Estimated velocity
+vx_est = [data.vxt];
+vy_est = [data.vyt];
 
 % Measure acceleration (rotated to body frame)
 ax = [data.ax];
@@ -87,15 +91,16 @@ Q = [dt^4/4  0       0       dt^3/2  0       0      ;
 %      0      0      0        0        2*10^-3  0 ; % Flow y
 %      0      0      0        0        0        1 ];
 
-R = [0.0001  0      0        0        0        0 ;
-     0      0.0001  0        0        0        0 ;
-     0      0      0.001    0        0        0 ; % Lidar
-     0      0      0        0.01     0        0 ; % Flow x
-     0      0      0        0        0.01     0 ; % Flow y
-     0      0      0        0        0        1 ];
+R = [1e-7   0      0       0       0        0 ;
+     0      1e-7   0       0       0        0 ;
+     0      0      1e-7    0        0        0 ; % Lidar
+     0      0      0       5e-4    0        0 ; % Flow x
+     0      0      0       0        5e-4     0 ; % Flow y
+     0      0      0       0        0        1 ];
 
 G = eye(6)*1;
 kf = dlqe(A,G,C,Q,R);
+kf = round( kf, 5 )
 
 %% Run Kalman Filter
 
@@ -113,12 +118,12 @@ for i = 2:n
     H = zeros(6,6);
 
     % Vicon at 10 Hz
-%     if( mod(i,20) == 0 )
-%         H(1:2, 1:2) = eye(2);
-%         y(1) = x_vicon(i);
-%         y(2) = y_vicon(i);
-%         disp('Vicon Data');
-%     end
+    if( mod(i,50) == 0 )
+        H(1:2, 1:2) = eye(2);
+        y(1) = x_vicon(i);
+        y(2) = y_vicon(i);
+        disp('Vicon Data');
+    end
 
     if( data(i).stat_lidar == 1 )
         H(3,3) = 1;
@@ -159,25 +164,27 @@ subplot(2,2,3)
 hold on
 plot( vx, 'LineWidth', 2  );
 plot( x(:,4), '.' );
+plot( vx_est );
 hold off
 grid on
 title("Velocity (x-axis)");
-legend("Flow", "Kalman");
+legend("Flow", "Kalman", "Estimator");
 
 subplot(2,2,4)
 hold on
 plot( vy, 'LineWidth', 2  );
 plot( x(:,5), '.');
+plot( vy_est );
 hold off
 grid on
 title("Velocity (y-axis)");
-legend("Flow", "Kalman");
+legend("Flow", "Kalman", "Estimator");
 
 figure(2)
 hold on
 plot3( x_vicon, y_vicon, z_vicon );
 plot3( x(:,1), x(:,2), x(:,3) );
-% plot3( x_est, y_est, z_est );
+plot3( x_est, y_est, z_est );
 title("Position (world)");
 legend("Vicon", "Kalman", "Estimator");
 xlabel("x [m]");

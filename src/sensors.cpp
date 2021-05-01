@@ -80,10 +80,13 @@ void Sensors::run_estimator(){
     U << data.ax, data.ay, data.az;
 
     // Fill measurement vector with data
-    if( data.status.flow == 1){
-        H(3,3) = 1; H(4,4) = 1;
-        Z(3) = data.vx;
-        Z(4) = data.vy;
+    if( stat_pos_x == 1 ){
+        H(0,0) = 1;
+        Z(0) = vicon_pos_x;
+    }
+    if( stat_pos_y == 1 ){
+        H(1,1) = 1;
+        Z(1) = vicon_pos_y;
     }
 
     if( data.status.lidar == 1){
@@ -91,7 +94,13 @@ void Sensors::run_estimator(){
         Z(2) = data.z;
     }
 
-    // Prediction, based on previous state and input
+    if( data.status.flow == 1){
+        H(3,3) = 1; H(4,4) = 1;
+        Z(3) = data.vx;
+        Z(4) = data.vy;
+    }
+
+    // Prediction, based on previous state and current input
     Xpre = A*X + B*U; 
 
     // Update prediction with update using measurements 
@@ -104,6 +113,13 @@ void Sensors::run_estimator(){
     estimate.vx = X(3);
     estimate.vy = X(4);
     estimate.vz = X(5);
+
+    // Reset status (measurements has been used!)
+    data.status.flow = 0;
+    data.status.lidar = 0;
+    data.status.imu = 0;
+    stat_pos_x = false;
+    stat_pos_y = false;
 }
 
 void Sensors::sample_imu(){
@@ -208,6 +224,18 @@ void Sensors::set_origin(){
     X.Fill(0);
 }
 
+
+void Sensors::update_pos_x( float x ){
+    stat_pos_x = true;
+
+    vicon_pos_x = x;
+}
+
+void Sensors::update_pos_y( float y ){
+    stat_pos_y = true;
+
+    vicon_pos_y = y;
+}
 
 // Rotate yaw to align with origin / home
 float Sensors::rotate_yaw( float yaw ){

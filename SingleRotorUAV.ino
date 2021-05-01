@@ -44,8 +44,8 @@ void setup() {
     control.set_servo_offsets( conf.params.servo_offset);
     control.init();
 
-    // control.servo_calibration( conf.params.servo_offset );
-    // conf.save();
+    control.servo_calibration( conf.params.servo_offset );
+    conf.save();
 
     // Important to init this last, otherwise IMU's buffer overflow and goes into error state....
     sensors.init();
@@ -86,6 +86,14 @@ void loop() {
           sensors.set_origin();
         break;  
 
+        case DATA_POSITION_X:
+          sensors.update_pos_x( cmd_value );
+        break;
+
+        case DATA_POSITION_Y:
+          sensors.update_pos_y( cmd_value );
+        break;
+        
         default:
           /* Serial.print("Unknown command: ");
           Serial.print( cmd ); Serial.print( " - With data: " );
@@ -108,9 +116,10 @@ void loop() {
       
       // Run estimator and control
       sensors.run_estimator();
-      control.control_position( sensors.estimate.x, sensors.estimate.y, sensors.estimate.vx, sensors.estimate.vy, sensors.data.yaw );
+      // control.control_position( sensors.estimate.x, sensors.estimate.y, sensors.estimate.vx, sensors.estimate.vy, sensors.data.yaw );
       control.control_hover( sensors.data.roll, sensors.data.pitch, sensors.data.yaw, sensors.data.gx, sensors.data.gy, sensors.data.gz , sensors.estimate.z, sensors.estimate.vz  );
-
+      // control.control_hover( 0, 0, 0, 0, 0, 0, 0, 0 ); // For testing position control only
+      
       // Manuel throttle override
       uint16_t temp = constrain(rc_input1, 930, 1910);
       uint16_t rc_throttle = map(temp, 930, 1910, MOTOR_MIN_DSHOT, MOTOR_MAX_DSHOT);
