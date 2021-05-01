@@ -22,8 +22,8 @@ z_est = [data.zt];
 z = [data.z];
 
 % Measured flow data (rotated with yaw)
-vx = [data.vx];
-vy = [data.vy];
+vx = [data.vx]*1.18;
+vy = [data.vy]*1.18;
 
 % Estimated velocity
 vx_est = [data.vxt];
@@ -71,17 +71,19 @@ C = [ 1 0 0 0 0 0  ; % x
 
 % Process Noice Covariance
 sigma_acc = 0.25; % Variance of acceleration m/s^2
-% Q = [dt^4/4   0      0        dt^3/2 ;
-%      0        dt^2   0        0      ;
-%      0        0      dt^2     0      ;
-%      dt^3/2   0      0        dt^2   ] * sigma_acc;
+% Q = [dt^4/4  0       0       dt^3/2  0       0      ;
+%      0       dt^4/4  0       0       dt^3/2  0      ;
+%      0       0       dt^4/4  0       0       dt^3/2 ;
+%      dt^3/2  0       0       dt^2    0       0      ;
+%      0       dt^3/2  0       0       dt^2    0      ;
+%      0       0       dt^3/2  0       0       dt^2   ] * sigma_acc;
 
-Q = [dt^4/4  0       0       dt^3/2  0       0      ;
-     0       dt^4/4  0       0       dt^3/2  0      ;
-     0       0       dt^4/4  0       0       dt^3/2 ;
-     dt^3/2  0       0       dt^2    0       0      ;
-     0       dt^3/2  0       0       dt^2    0      ;
-     0       0       dt^3/2  0       0       dt^2   ] * sigma_acc;
+Q = [ 1e-3   0     0      0     0     0     ;  % x
+      0     1e-3   0      0     0     0     ;  % y 
+      0     0     1e-10  0     0     0     ;  % z 
+      0     0     0      1e-3   0     0     ;  % vx
+      0     0     0      0     1e-3   0     ;  % vy
+      0     0     0      0     0     1e-5 ];  % vz
 
 % Measurement Noise Covariance
 % R = [10^-5  0      0        0        0        0 ;
@@ -91,16 +93,18 @@ Q = [dt^4/4  0       0       dt^3/2  0       0      ;
 %      0      0      0        0        2*10^-3  0 ; % Flow y
 %      0      0      0        0        0        1 ];
 
-R = [1e-7   0      0       0       0        0 ;
-     0      1e-7   0       0       0        0 ;
-     0      0      1e-7    0        0        0 ; % Lidar
-     0      0      0       5e-4    0        0 ; % Flow x
-     0      0      0       0        5e-4     0 ; % Flow y
-     0      0      0       0        0        1 ];
+R = [1e-3    0      0       0       0      0 ;
+     0      1e-3    0       0       0      0 ;
+     0      0      1e-7    0       0      0 ; % Lidar
+     0      0      0       1e-1     0      0 ; % Flow x
+     0      0      0       0       1e-1    0 ; % Flow y
+     0      0      0       0       0      1 ];
 
 G = eye(6)*1;
 kf = dlqe(A,G,C,Q,R);
-kf = round( kf, 5 )
+kf = round( kf, 5 );
+
+matrix_to_cpp(kf)
 
 %% Run Kalman Filter
 
@@ -112,17 +116,17 @@ x(1,:) = [ 0; 0; z(1); 0; 0; 0 ];
 for i = 2:n
     
     u = [ ax(i); ay(i); az(i)];
-    %     u = [0; 0; 0];
+    %    u = [0; 0; 0];
     y = [ 0; 0; 0 ; 0; 0; 0 ];
     
     H = zeros(6,6);
 
-    % Vicon at 10 Hz
-    if( mod(i,50) == 0 )
+    % Vicon at 3.3 Hz
+    if( mod(i,60) == 0 )
         H(1:2, 1:2) = eye(2);
         y(1) = x_vicon(i);
         y(2) = y_vicon(i);
-        disp('Vicon Data');
+        % disp('Vicon Data');
     end
 
     if( data(i).stat_lidar == 1 )
@@ -143,48 +147,42 @@ end
 %% Plotting
 
 figure(1)
-subplot(2,2,1)
-hold on
-plot( z , 'LineWidth', 2);
-plot( x(:,3), '.' );
-hold off
-grid on
-title("Altitude (z-axis)");
-legend("Measured", "Kalman");
-
-subplot(2,2,2)
-hold on
-plot( x(:,6) );
-hold off
-grid on
-title("Altitude velocity (z-axis)");
-legend("Kalman");
-
-subplot(2,2,3)
+subplot(1,2,1)
 hold on
 plot( vx, 'LineWidth', 2  );
-plot( x(:,4), '.' );
-plot( vx_est );
+plot( x(:,4));
 hold off
 grid on
 title("Velocity (x-axis)");
 legend("Flow", "Kalman", "Estimator");
 
-subplot(2,2,4)
+subplot(1,2,2)
 hold on
 plot( vy, 'LineWidth', 2  );
-plot( x(:,5), '.');
-plot( vy_est );
+plot( x(:,5));
 hold off
 grid on
 title("Velocity (y-axis)");
-legend("Flow", "Kalman", "Estimator");
+legend("Flow", "Kalman");
 
 figure(2)
+subplot(1,2,1);
+hold on
+plot( x_vicon );
+plot( x(:,1) );
+legend("Vicon", "Kalman");
+hold off
+subplot(1,2,2);
+hold on
+plot( y_vicon );
+plot( x(:,2) );
+legend("Vicon", "Kalman");
+hold off
+
+figure(3)
 hold on
 plot3( x_vicon, y_vicon, z_vicon );
 plot3( x(:,1), x(:,2), x(:,3) );
-plot3( x_est, y_est, z_est );
 title("Position (world)");
 legend("Vicon", "Kalman", "Estimator");
 xlabel("x [m]");
@@ -192,9 +190,34 @@ ylabel("y [m]");
 axis equal
 grid on
 
-figure(3)
 
-hold on
-plot( x_vicon );
-plot( x(:,1) );
-hold off
+% figure(4)
+% hold on
+% plot( ax );
+% plot( ay );
+% plot( az );
+% legend("ax", "ay", "az");
+% hold off
+
+
+function matrix_to_cpp( matrix )
+
+    name = inputname(1);
+    [m, n] = size(matrix);
+    
+    tol = 1.e-6;
+    matrix(matrix<=0 & matrix>-tol) = 0;
+    
+    fprintf('Matrix %s \n', name);
+    
+    for i = 1:m
+        line = string();
+        for j = 1:n
+            str = sprintf('%.6f,', round( matrix(i,j), 6 ) );
+            value = pad(str, 10, 'left');
+
+            line = append( line, value );
+        end
+        disp(line);
+    end
+end

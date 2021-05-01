@@ -180,8 +180,8 @@ sys_hint = ss(A_hint, B_hint, C_hint, D_hint);
 
 % Bryson's Rule. 
 % Max angle of 0.3 radians. Maximum angular rate of 5 rad/second
-Q = [ 4*10^1     0        0        0      0      0      0        0       ;  % Roll
-      0        4*10^1     0        0      0      0      0        0       ;  % Pitch
+Q = [ 10^2     0        0        0      0      0      0        0       ;  % Roll
+      0        10^2     0        0      0      0      0        0       ;  % Pitch
       0        0        10^0    0      0      0      0        0       ;  % Yaw
       0        0        0        10^0  0      0      0        0       ;  % omega_x
       0        0        0        0      10^0  0      0        0       ;  % omega_y
@@ -190,7 +190,7 @@ Q = [ 4*10^1     0        0        0      0      0      0        0       ;  % Ro
       0        0        0        0      0      0      0        10^-0  ]; % v_z
   
 % Integral action  
-Q(9,9) = [ 5 ]; % z
+Q(9,9) = [ 50 ]; % z
       
 % Max actuation angle of +-10 degress
 R = [ 1/10^2   0       0       0       0       ; % a1
@@ -208,16 +208,16 @@ matrix_to_cpp( K_lqr )
 % cl_sys = ss((A_red - B_red*K_lqr), B_red, C_red, D_red );
 
 
-Q_hor = [1/5^2  0       0       0;
-         0      1/5^2   0       0;
-         0      0       1/1.5^2  0;
-         0      0       0       1/1.5^2 ];
+Q_hor = [1/0.5^2  0       0       0;
+         0      1/0.5^2   0       0;
+         0      0       1/0.1^2  0;
+         0      0       0       1/0.1^2 ];
      
-Q_hor(5:6,5:6) = [0.05  0
-                  0   0.05];
+Q_hor(5:6,5:6) = [0.02  0
+                  0   0.02];
      
-R_hor = [1/0.1^2   0;
-         0         1/0.1^2];
+R_hor = [1/0.01^2   0;
+         0         1/0.01^2];
 
 K_hint = lqr(sys_hint, Q_hor, R_hor);
 
@@ -245,7 +245,7 @@ function matrix_to_cpp( matrix )
     for i = 1:m
         line = string();
         for j = 1:n
-            str = sprintf('%.3f,', round( matrix(i,j), 3 ) );
+            str = sprintf('%.4f,', round( matrix(i,j), 4 ) );
             value = pad(str, 10, 'left');
 
             line = append( line, value );

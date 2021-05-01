@@ -79,7 +79,9 @@ void Control::write_servo_ms( uint8_t index, uint16_t ms ){
 
 void Control::control_hover( float roll, float pitch, float yaw, float gx, float gy, float gz, float z, float vz ){
     
-    Matrix<5,1> output;
+    Matrix<5,1> output; // Output vector
+    Matrix<9,1> error; // State error vector
+    Matrix<5,9> K = K_hover; 
 
     // Integral action for altitude (z)
     float error_z = SP_hover(6) - z; 
@@ -89,15 +91,21 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
     // Load states into state-vector (int_z = integral term)
     X << roll, pitch, yaw, gx, gy, gz, z, vz, 0;
 
-    Xe = SP_hover - X;
-    Xe(8) = error_integral_z; // Insert integral term into the state-error vector
+    error = SP_hover - X;
+    error(8) = error_integral_z; // Insert integral term into the state-error vector
 
     // Special case for yaw:
-    if( Xe(2) > PI )
-        Xe(2) -= TWO_PI ;
+    if( error(2) > PI )
+        error(2) -= TWO_PI ;
+
+
+    // If commanded to land, remove P-control from altitude (simply reduce integral)
+    if( status == CONTROL_STATUS_LANDING ){
+        K(4,6) = 0;
+    }
 
     // Run Controller
-    output = K_hover * Xe; 
+    output = K * error; 
 
     // Filter servo outputs, to remove unwanted spikes
     U(0) = RateLimit( output(0), U(0), 0.3 );
@@ -112,28 +120,6 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
     U(3) = Limit( U(3), -20, 20 );
 
     U(4) = output(4);
-    
-
-    write_servo(1, -U(0) );
-    write_servo(2, U(1) );
-    write_servo(3, U(2) );
-    write_servo(0, -U(3) ); 
-
-    data.a1 = U(0);
-    data.a2 = U(1);
-    data.a3 = U(2);
-    data.a4 = U(3);
-    
-    
-    uint16_t control_throttle = (uint16_t)(MOTOR_KRPM_TO_DSHOT * U(4));
-
-    if( control_throttle >  max_throttle )
-        data.dshot = max_throttle;
-    else
-        data.dshot = control_throttle;
-
-    write_motor( DSHOT_PORT_1, data.dshot );
-    write_motor( DSHOT_PORT_2, data.dshot );
 
 }
 
@@ -153,13 +139,13 @@ void Control::set_position_z( float z ){
 void Control::control_position( float x, float y, float vx, float vy, float yaw ){
 
     Matrix<2,1> output;
-    Matrix<4,1> error;
+    Matrix<6,1> error;
 
     // Load state vector
-    X_pos << x, y, vx, vy;
+    X_pos << x, y, vx, vy, 0, 0;
 
-    // Calculate error
-    error = (SP_pos - X_pos);
+    // Calculate state error
+    error = SP_pos - X_pos;
 
     // Rotate error to body (assuming hover state, roll = 0, pitch = 0)
     error(0) = error(0)*cos(yaw) + error(1)*sin(yaw);  // x
@@ -167,12 +153,21 @@ void Control::control_position( float x, float y, float vx, float vy, float yaw 
     error(2) = error(2)*cos(yaw) + error(3)*sin(yaw);  // vx
     error(3) = error(3)*cos(yaw) - error(2)*sin(yaw);  // vy
 
+
+    // If integral sum generates output larger than min max, should stop integral growth
+    error_integral_x += Limit( error(0), -1, 1) * CONTROL_LOOP_INTERVAL;
+    error_integral_y += Limit( error(1), -1, 1) * CONTROL_LOOP_INTERVAL;
+
+    // Load integral error 
+    error(4) = error_integral_x;
+    error(5) = error_integral_y;
+
     // Run controller
     output = K_pos * error;
 
-    // Limit position output to 10 degress in roll and pitch 
-    output(0) = Limit( output(0), -5 * DEG_TO_RAD, 5 * DEG_TO_RAD );
-    output(1) = Limit( output(1), -5 * DEG_TO_RAD, 5 * DEG_TO_RAD );
+    // Limit position output to +-10 degress in roll and pitch 
+    output(0) = Limit( output(0), -10 * DEG_TO_RAD, 10 * DEG_TO_RAD );
+    output(1) = Limit( output(1), -10 * DEG_TO_RAD, 10 * DEG_TO_RAD );
 
     // Use the output of the positional controller as setpoints for the hover controller
     // Outputs are flipped because of sensor orientation
@@ -181,8 +176,56 @@ void Control::control_position( float x, float y, float vx, float vy, float yaw 
 
 }
 
+void Control::initiate_landing(){
+    status = CONTROL_STATUS_LANDING;
+    set_position_z( 0 );
+}
+
+void Control::initiate_takeoff( float target_altitude ){
+    status = CONTROL_STATUS_FLYING;
+    set_position_z( target_altitude );
+}
+
+void Control::run( sensor_data_t raw, estimator_data_t est ){
+
+    uint16_t control_throttle;
+
+    if( status == CONTROL_STATUS_STATIONARY ){
+        control_hover( raw.roll, raw.pitch, raw.yaw, raw.gx, raw.gy, raw.gz , 0, 0  );
+        control_throttle = 0;
+    }
+    else{          
+        // control_position( est.x, est.y, est.vx, est.vy, raw.yaw );
+        control_hover( raw.roll, raw.pitch, raw.yaw, raw.gx, raw.gy, raw.gz , est.z, est.vz  );
+        control_throttle = (uint16_t)(MOTOR_KRPM_TO_DSHOT * U(4));
+    }
+
+    // Actuate servos
+    write_servo(1, -U(0) );
+    write_servo(2, U(1) );
+    write_servo(3, U(2) );
+    write_servo(0, -U(3) ); 
+
+    data.a1 = U(0);
+    data.a2 = U(1);
+    data.a3 = U(2);
+    data.a4 = U(3);
+
+    // Limit output throttle
+    if( control_throttle >  max_throttle )
+        data.dshot = max_throttle;
+    else
+        data.dshot = control_throttle;
+
+    write_motor( DSHOT_PORT_1, data.dshot );
+    write_motor( DSHOT_PORT_2, data.dshot );
+
+}
+
 void Control::reset_integral_action( void ){
 
+    error_integral_x = 0;
+    error_integral_y = 0;
     error_integral_z = 0;
 
 }

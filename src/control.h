@@ -3,6 +3,7 @@
 
 #include "constants.h"
 #include "dshot.h"
+#include "sensors.h"
 #include <BasicLinearAlgebra.h>
 #include <Servo.h>
 
@@ -17,6 +18,12 @@
 // Maps the kRPM output of the controller to DSHOT values. This varies with voltage, thus should probably implement RPM controller at some point
 #define MOTOR_KRPM_TO_DSHOT 72.43f 
 #define CONTROL_LOOP_INTERVAL 0.005f
+
+typedef enum{
+    CONTROL_STATUS_STATIONARY = 0,
+    CONTROL_STATUS_FLYING,
+    CONTROL_STATUS_LANDING,
+} control_status_t; 
 
 using namespace BLA;
 
@@ -41,12 +48,17 @@ public:
     void write_servo_ms( uint8_t index, uint16_t ms );
 
 
+    void run( sensor_data_t raw, estimator_data_t est );
+
     // Controller functions
     void control_hover( float roll, float pitch, float yaw, float gx, float gy, float gz, float z, float vz );
 
     void control_position( float x, float y, float vx, float vy, float yaw );
 
     void reset_integral_action( void );
+
+    void initiate_landing( void );
+    void initiate_takeoff( float target_altitude );
 
     void set_max_throttle( uint16_t dshot );
 
@@ -66,7 +78,8 @@ public:
 private:
 
     Servo* servos;
-    
+
+    control_status_t status = CONTROL_STATUS_STATIONARY; 
 
     static const uint16_t servo_pins[];
     static const uint16_t receiver_pins[];
@@ -86,26 +99,33 @@ private:
                                 0.0000,  -22.3607,   -5.0000,    0.0000,   -8.9978,   -5.2168,    0.0000,    0.0000,    0.0000,
                                 0.0000,    0.0000,    0.0000,    0.0000,    0.0000,    0.0000,    3.7895,    2.9874,    2.2361 }; */
                     
-    Matrix<5,9> K_hover = {     44.721,    0.000,   -5.000,   10.579,    0.000,   -5.217,    0.000,    0.000,    0.000,
+    /* Matrix<5,9> K_hover = {  44.721,    0.000,   -5.000,   10.579,    0.000,   -5.217,    0.000,    0.000,    0.000,
                                  0.000,  -44.721,    5.000,    0.000,  -10.579,    5.217,    0.000,    0.000,    0.000,
                                 44.721,    0.000,    5.000,   10.579,    0.000,    5.217,    0.000,    0.000,    0.000,
                                  0.000,  -44.721,   -5.000,    0.000,  -10.579,   -5.217,    0.000,    0.000,    0.000,
-                                 0.000,    0.000,    0.000,    0.000,    0.000,    0.000,    3.789,    2.987,    2.236, };
-                                // roll    // pitch   // yaw     // gx      // gy       // gz      // z     // vz      // zint
+                                 0.000,    0.000,    0.000,    0.000,    0.000,    0.000,    7.716,    4.140,    7.071, }; */
+
+    Matrix<5,9> K_hover = {    70.711,    0.000,   -5.000,   12.161,    0.000,   -5.217,    0.000,    0.000,    0.000,
+                                0.000,  -70.711,    5.000,    0.000,  -12.162,    5.217,    0.000,    0.000,    0.000,
+                               70.711,    0.000,    5.000,   12.161,    0.000,    5.217,    0.000,    0.000,    0.000,
+                                0.000,  -70.711,   -5.000,    0.000,  -12.162,   -5.217,    0.000,    0.000,    0.000,
+                                0.000,    0.000,    0.000,    0.000,    0.000,    0.000,    7.716,    4.140,    7.071 };
+                               // roll   // pitch  // yaw    // gx     // gy     // gz     // z      // vz     // zint
 
     // Position controller
-    Matrix<2,4> K_pos = {   0.0000,   -0.1250,    0.0000,  -0.1730,
-                            0.1250,    0.0000,    0.1730,   0.0000  };
-                            // x       // y      // vx      // vy
+    /* Matrix<2,4> K_pos = {   0.0000,   -0.1250,    0.0000,  -0.1730,
+                            0.1250,    0.0000,    0.1730,   0.0000  }; */
+
+    Matrix<2,6> K_pos = {   0.0000,  -0.0274,   0.0000,  -0.1249,   0.0000,  -0.0014,
+                            0.0274,   0.0000,   0.1249,   0.0000,   0.0014,   0.0000,  };
+                            // x      // y      // vx     // vy     // xint   // yint
+
 
     // State vector roll, pitch, yaw, gx, gy, gz, z, vz, zi
     Matrix<9,1> X = {0,0,0,0,0,0,0,0,0};
 
     // Position state vector
-    Matrix<4,1> X_pos = {0,0,0,0};
-
-    // State Error Vector
-    Matrix<9,1> Xe = {0,0,0,0,0,0,0,0,0};
+    Matrix<6,1> X_pos = {0,0,0,0,0,0};
 
     // Actuation vector / output
     Matrix<5,1> U = {0,0,0,0,0};
@@ -113,7 +133,8 @@ private:
     // Setpoints for attitude controller (roll, pitch, yaw, gx, gy, gz, z, vz, zint)
     Matrix<9,1> SP_hover = {0,0,0,0,0,0,0,0,0};
 
-    Matrix<4,1> SP_pos = {0,0,0,0};
+    // Setpoints for position controller (x, y, vx, vy, xint, yint)
+    Matrix<6,1> SP_pos = {0,0,0,0,0,0};
 
     uint16_t max_throttle = DSHOT_MAX_OUTPUT;
 
@@ -121,6 +142,9 @@ private:
     float error_integral_x = 0;
     float error_integral_y = 0;
     float error_integral_z = 0;
+
+    // Used for a steady descent. 
+    float last_hover_z = 0;
 
     int16_t servo_offset[4] = {0,0,0,0};
 

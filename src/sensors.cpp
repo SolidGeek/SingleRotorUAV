@@ -174,8 +174,8 @@ void Sensors::sample_flow()
     flow->readMotionCount( &dy, &dx );
 
     // Convert flow to velocity and rotate to world frame (assumes flat earth)
-    vbx = (float)dx * data.z * 0.24; // 0.24 = scaling factor found experimentally
-    vby = (float)dy * data.z * 0.24;
+    vbx = (float)dx * (data.z + SENSOR_LIDAR_OFFSET) * 0.2832; // 0.2832 = scaling factor found experimentally
+    vby = (float)dy * (data.z + SENSOR_LIDAR_OFFSET) * 0.2832;
     vx = cos(u) * vbx - sin(u) * vby;
     vy = sin(u) * vbx + cos(u) * vby;
 

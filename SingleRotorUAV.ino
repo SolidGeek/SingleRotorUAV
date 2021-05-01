@@ -44,8 +44,8 @@ void setup() {
     control.set_servo_offsets( conf.params.servo_offset);
     control.init();
 
-    control.servo_calibration( conf.params.servo_offset );
-    conf.save();
+    // control.servo_calibration( conf.params.servo_offset );
+    // conf.save();
 
     // Important to init this last, otherwise IMU's buffer overflow and goes into error state....
     sensors.init();
@@ -63,41 +63,42 @@ void loop() {
 
     cmd = comm.read_udp_commands();
     if( cmd >= 0 ){
-      float cmd_value = comm.get_command_value();
+      float value = comm.get_command_value();
       switch( cmd ){
 
         case COMMAND_LAND:
-          control.set_position_z( 0 );
+          control.initiate_landing();
         break;
 
         case COMMAND_TAKEOFF:
-          control.set_position_z( cmd_value );
+          control.initiate_takeoff( value );
         break;
         
         case COMMAND_SETPOINT_X:
-          control.set_position_x( cmd_value );
+          control.set_position_x( value );
         break;
 
         case COMMAND_SETPOINT_Y:
-          control.set_position_y( cmd_value );
+          control.set_position_y( value );
         break;
         
         case COMMAND_SET_ORIGIN:
           sensors.set_origin();
+          control.reset_integral_action();
         break;  
 
         case DATA_POSITION_X:
-          sensors.update_pos_x( cmd_value );
+          sensors.update_pos_x( value );
         break;
 
         case DATA_POSITION_Y:
-          sensors.update_pos_y( cmd_value );
+          sensors.update_pos_y( value );
         break;
         
         default:
           /* Serial.print("Unknown command: ");
           Serial.print( cmd ); Serial.print( " - With data: " );
-          Serial.println( cmd_value ); */
+          Serial.println( value ); */
         break;
       }
     }
@@ -116,9 +117,8 @@ void loop() {
       
       // Run estimator and control
       sensors.run_estimator();
-      // control.control_position( sensors.estimate.x, sensors.estimate.y, sensors.estimate.vx, sensors.estimate.vy, sensors.data.yaw );
-      control.control_hover( sensors.data.roll, sensors.data.pitch, sensors.data.yaw, sensors.data.gx, sensors.data.gy, sensors.data.gz , sensors.estimate.z, sensors.estimate.vz  );
-      // control.control_hover( 0, 0, 0, 0, 0, 0, 0, 0 ); // For testing position control only
+
+      control.run( sensors.data, sensors.estimate );
       
       // Manuel throttle override
       uint16_t temp = constrain(rc_input1, 930, 1910);
