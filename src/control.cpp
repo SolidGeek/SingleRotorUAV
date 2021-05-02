@@ -191,7 +191,7 @@ void Control::run( sensor_data_t raw, estimator_data_t est ){
     uint16_t control_throttle;
 
     if( status == CONTROL_STATUS_STATIONARY ){
-        control_hover( raw.roll, raw.pitch, 0, raw.gx, raw.gy, 0 , 0, 0  );
+        control_hover( 0, 0, 0, raw.gx, raw.gy, 0 , 0, 0  );
         control_throttle = 0;
     }
     else{          
@@ -201,10 +201,10 @@ void Control::run( sensor_data_t raw, estimator_data_t est ){
     }
 
     // Actuate servos
-    write_servo(1, -U(0) );
-    write_servo(2, U(1) );
-    write_servo(3, U(2) );
-    write_servo(0, -U(3) ); 
+    write_servo(0, U(0) );
+    write_servo(1, U(1) );
+    write_servo(2, -U(2) );
+    write_servo(3, -U(3) ); 
 
     data.a1 = U(0);
     data.a2 = U(1);

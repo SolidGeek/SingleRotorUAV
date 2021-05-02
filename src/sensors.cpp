@@ -72,17 +72,12 @@ void Sensors::run_estimator(){
 
     // Perform gyrocompensation on flow and rotate to world frame.
     v[0] = data.vx * p[2] - data.gy * p[2];
-    v[1] = data.vy * p[2] + data.gx * p[2];
+    v[1] = data.vy * p[2] - data.gx * p[2]; // Dunno why this is minus (-), but works better.
     rotate_to_world( v );
 
     // Rotate acceleration to world frame
     a[0] = data.ax; a[1] = data.ay; a[2] = data.az;
     rotate_to_world( a );
-
-    Serial.print(data.ay);
-    Serial.print(",");
-    Serial.println(data.vy);
-    
 
 
     /* ---- Estimation ---- */
@@ -137,29 +132,29 @@ void Sensors::sample_imu(){
 
     while ( report_ID = imu->getReadings() ) {
         // Read Attitude estimate
+        // roll and pitch are flipped because of IMU orientation
         if( report_ID == SENSOR_REPORTID_ROTATION_VECTOR ){
-            data.roll   = imu->getRoll();   // Radians
-            data.pitch  = imu->getPitch();  // Radians
+            data.roll   = imu->getPitch();  // Radians 
+            data.pitch  = imu->getRoll();   // Radians
             yaw_raw     = imu->getYaw();    // Radians
             data.yaw    = rotate_yaw( yaw_raw );  
         }
 
         // Linear acceleration is gravity componsated (but still measured in body frame)
+        // x and y are flipped because of orientation of IMU
         if( report_ID == SENSOR_REPORTID_LINEAR_ACCELERATION ){
-            accel[0] = imu->getLinAccelX();
-            accel[1] = imu->getLinAccelY();
-            accel[2] = imu->getLinAccelZ();
+            
+            data.ax = LPF( imu->getLinAccelY(), data.ax, 1 ) ; // Filter coefficient 1 = No lowpass
+            data.ay = LPF( -imu->getLinAccelX(), data.ay, 1 ) ;
+            data.az = LPF( imu->getLinAccelZ(), data.az, 0.8 );
 
-            // x and y are flipped because of orientation of IMU
-            data.ax = LPF( accel[1], data.ax, 1 ) ; // Filter coefficient 1 = No lowpass
-            data.ay = LPF( -accel[0], data.ay, 1 ) ;
-            data.az = LPF( accel[2], data.az, 0.8 );
         }
 
-        // Read Raw Gyro data
+        // Read Raw Gyro data 
+        // gx and gy are flipped because of IMU orientation
         if( report_ID == SENSOR_REPORTID_GYROSCOPE ) {
-            data.gx = LPF( imu->getGyroX(), data.gx, 0.8 ); // Radians / second
-            data.gy = LPF( imu->getGyroY(), data.gy, 0.8 ); // Radians / second
+            data.gx = LPF( imu->getGyroY(), data.gx, 0.8 ); // Radians / second
+            data.gy = LPF( imu->getGyroX(), data.gy, 0.8 ); // Radians / second
             data.gz = LPF( imu->getGyroZ(), data.gz, 0.8 ); // Radians / second
         }
 

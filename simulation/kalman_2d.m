@@ -85,12 +85,12 @@ sigma_acc = 0.25; % Variance of acceleration m/s^2
 %      0       dt^3/2  0       0       dt^2    0      ;
 %      0       0       dt^3/2  0       0       dt^2   ] * sigma_acc;
 
-Q = [ 1e-4   0     0      0     0     0     ;  % x
-      0     1e-4   0      0     0     0     ;  % y 
-      0     0     1e-8  0     0     0     ;  % z 
-      0     0     0      1e-3   0     0     ;  % vx
-      0     0     0      0     1e-3   0     ;  % vy
-      0     0     0      0     0     1e-5 ];  % vz
+Q = [ 1e-5   0     0      0     0     0     ;  % x
+      0     1e-5   0      0     0     0     ;  % y 
+      0     0     1e-5  0     0     0     ;  % z 
+      0     0     0      1e-4   0     0     ;  % vx
+      0     0     0      0     1e-4   0     ;  % vy
+      0     0     0      0     0     5e-3 ];  % vz
 
 % Measurement Noise Covariance
 % R = [10^-5  0      0        0        0        0 ;
@@ -102,9 +102,9 @@ Q = [ 1e-4   0     0      0     0     0     ;  % x
 
 R = [1e-5    0      0       0       0      0 ;
      0      1e-5    0       0       0      0 ;
-     0      0      1e-5    0       0      0 ; % Lidar
-     0      0      0       1e-1     0      0 ; % Flow x
-     0      0      0       0       1e-1    0 ; % Flow y
+     0      0      1e-4    0       0      0 ; % Lidar
+     0      0      0       1e-3    0      0 ; % Flow x
+     0      0      0       0       1e-3    0 ; % Flow y
      0      0      0       0       0      1 ];
 
 G = eye(6)*1;
@@ -138,7 +138,7 @@ for i = 2:n
         H(1:2, 1:2) = eye(2);
         y(1) = x_vicon(i);
         y(2) = y_vicon(i);
-        disp('Vicon Data');
+        % disp('Vicon Data');
     end
 
     if( data(i).stat_lidar == 1 )
@@ -148,8 +148,8 @@ for i = 2:n
     
     if( data(i).stat_flow == 1 )
         
-        v = [( vx(i) - gy(i) ) * h ;
-             ( vy(i) + gx(i) ) * h;
+        v = [( vx(i) - gy(i) ) * h;
+             ( vy(i) - gx(i) ) * h;
              0 ];
         v = rotate_to_world( v, roll(i), pitch(i), yaw(i) );
 
@@ -165,7 +165,7 @@ end
 %% Plotting
 
 figure(1)
-subplot(1,2,1)
+subplot(1,3,1)
 hold on
 plot( vx, 'LineWidth', 2  );
 plot( x(:,4));
@@ -174,7 +174,7 @@ grid on
 title("Velocity (x-axis)");
 legend("Flow", "Kalman", "Estimator");
 
-subplot(1,2,2)
+subplot(1,3,2)
 hold on
 plot( vy, 'LineWidth', 2  );
 plot( x(:,5));
@@ -182,6 +182,14 @@ hold off
 grid on
 title("Velocity (y-axis)");
 legend("Flow", "Kalman");
+
+subplot(1,3,3)
+hold on
+plot( x(:,6));
+hold off
+grid on
+title("Velocity (z-axis)");
+legend("Kalman");
 
 figure(2)
 subplot(1,2,1);
