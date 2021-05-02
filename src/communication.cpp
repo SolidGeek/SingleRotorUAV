@@ -17,7 +17,7 @@ void Communication::write_udp_telemetry( tlm_data_t package ){
 
     memset(&telemetry_buffer, 0, sizeof(telemetry_buffer)); 
     telemetry_buffer = package;
-    package.timestamp = micros();
+    telemetry_buffer.timestamp = micros();
 
     // Send struct of data over UART
     uart_transfer->sendDatum( telemetry_buffer );

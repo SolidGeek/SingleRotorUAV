@@ -8,7 +8,8 @@
 
 // Telemetry package
 typedef struct __attribute__ ((packed)){
-    uint64_t timestamp;
+    uint32_t timestamp;
+    uint32_t index; 
     sensor_data_t data;         // System output (states)
     estimator_data_t estimate;  // Estimator output 
     control_signal_t control;   // System input  (actuation)

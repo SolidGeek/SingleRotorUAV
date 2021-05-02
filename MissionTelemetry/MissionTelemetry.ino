@@ -8,11 +8,12 @@ typedef struct __attribute__ ((packed)) {
   float roll, pitch, yaw;
   float ax, ay, az;
   float vx, vy;
-  float z;
+  float x, y, z;
   struct { // Bitfield, using 1 byte, to represent if new measurements are available
     uint8_t imu     : 1;
     uint8_t flow    : 1;
     uint8_t lidar   : 1;
+    uint8_t pos     : 1;
   } status;
 } sensor_data_t;
 
@@ -27,7 +28,8 @@ typedef struct __attribute__ ((packed)) {
 } control_signal_t;
 
 typedef struct __attribute__ ((packed)) {
-  uint64_t timestamp;
+  uint32_t timestamp;
+  uint32_t index; 
   sensor_data_t data;    // System output (states)
   estimator_data_t estimate;
   control_signal_t control; // System input  (actuation)
@@ -47,7 +49,7 @@ command_t command_buffer;
 
 // Create union
 union{
-  float data;
+  float value;
   uint8_t bytes[4];
 } bytes_to_float; 
 
@@ -90,6 +92,8 @@ void loop() {
   // Receive UDP Commands from PC and send to Teensy
   if ( command_packet_size = UDP.parsePacket() ){
 
+    // Clear old buffer
+    memset(udp_rx_buffer, 0, sizeof(udp_rx_buffer));
     int8_t len = UDP.read( udp_rx_buffer, sizeof(udp_rx_buffer) );
 
     // Minimum size for a command package
@@ -107,10 +111,11 @@ void loop() {
             memcpy( bytes_to_float.bytes, &udp_rx_buffer[i], 4 );
 
             // Extract float from union, and place it in command_buffer
-            command_buffer.value[n] = bytes_to_float.data;
+            float value = bytes_to_float.value;
+            command_buffer.value[n++] = value;
+
             i += 4; // Size of float32
         }
-
         // Send struct over UART to Teensy
         uart_transfer.sendDatum( command_buffer );
     }
@@ -136,6 +141,8 @@ void loop() {
     UDP.beginPacket( UDP_address, UDP_port );
     UDP.write(udp_tx_buffer, udp_tlm_size );
     UDP.endPacket();
+
+    Serial.println(telemetry_buffer.timestamp);
   }
   
   // Indicate that Wifi is connected to client

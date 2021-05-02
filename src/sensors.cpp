@@ -76,7 +76,13 @@ void Sensors::run_estimator(){
     rotate_to_world( v );
 
     // Rotate acceleration to world frame
+    a[0] = data.ax; a[1] = data.ay; a[2] = data.az;
     rotate_to_world( a );
+
+    Serial.print(data.ay);
+    Serial.print(",");
+    Serial.println(data.vy);
+    
 
 
     /* ---- Estimation ---- */
@@ -86,13 +92,10 @@ void Sensors::run_estimator(){
     U << a[0], a[1], a[2];
 
     // Fill measurement vector with data
-    if( stat_pos_x == 1 ){
-        H(0,0) = 1;
-        Z(0) = vicon_pos_x;
-    }
-    if( stat_pos_y == 1 ){
-        H(1,1) = 1;
-        Z(1) = vicon_pos_y;
+    if( data.status.pos == 1 ){
+        H(0,0) = 1; H(1,1) = 1;
+        Z(0) = data.x;
+        Z(1) = data.y;
     }
 
     if( data.status.lidar == 1){
@@ -124,8 +127,7 @@ void Sensors::run_estimator(){
     data.status.flow = 0;
     data.status.lidar = 0;
     data.status.imu = 0;
-    stat_pos_x = false;
-    stat_pos_y = false;
+    data.status.pos = 0;
 }
 
 void Sensors::sample_imu(){
@@ -148,8 +150,9 @@ void Sensors::sample_imu(){
             accel[1] = imu->getLinAccelY();
             accel[2] = imu->getLinAccelZ();
 
-            data.ax = LPF( accel[0], data.ax, 1 ) ; // Filter coefficient 1 = No lowpass
-            data.ay = LPF( accel[1], data.ay, 1 ) ;
+            // x and y are flipped because of orientation of IMU
+            data.ax = LPF( accel[1], data.ax, 1 ) ; // Filter coefficient 1 = No lowpass
+            data.ay = LPF( -accel[0], data.ay, 1 ) ;
             data.az = LPF( accel[2], data.az, 0.8 );
         }
 
@@ -229,16 +232,12 @@ void Sensors::set_origin(){
 }
 
 
-void Sensors::update_pos_x( float x ){
-    stat_pos_x = true;
+void Sensors::update_pos( float x, float y ){
 
-    vicon_pos_x = x;
-}
+    data.x = x;
+    data.y = y;
 
-void Sensors::update_pos_y( float y ){
-    stat_pos_y = true;
-
-    vicon_pos_y = y;
+    data.status.pos = 1;
 }
 
 // Rotate yaw to align with origin / home

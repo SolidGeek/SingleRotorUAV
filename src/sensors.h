@@ -27,13 +27,14 @@ typedef struct __attribute__ ((packed)){
     float roll, pitch, yaw;
     float ax, ay, az;
     float vx, vy;
-    float z;
+    float x, y, z;
     struct{ // Bitfield, using 1 byte, to represent if new measurements are available
         uint8_t imu     : 1;
         uint8_t flow    : 1;
         uint8_t lidar   : 1;
+        uint8_t pos     : 1;
     } status;
-} sensor_data_t; // 49 bytes
+} sensor_data_t; // 
 
 typedef struct __attribute__ ((packed)){
     float x, y, z;
@@ -67,8 +68,7 @@ public:
     // If interpolated measurements are needed, maybe Kalman.
     void run_estimator();
 
-    void update_pos_x ( float x );
-    void update_pos_y ( float y );
+    void update_pos ( float x, float y );
 
     sensor_data_t data;
     estimator_data_t estimate;
@@ -83,12 +83,6 @@ private:
 
     float yaw_origin = 0;
     float yaw_raw = 0;
-
-    float vicon_pos_x = 0;
-    float vicon_pos_y = 0;
-
-    bool stat_pos_x = false;
-    bool stat_pos_y = false;
 
     uint32_t last_flow_sample;
 

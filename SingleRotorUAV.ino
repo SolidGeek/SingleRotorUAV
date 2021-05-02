@@ -53,7 +53,7 @@ void setup() {
     Serial.println("Ready");
 }
 
-
+uint32_t last_vicon = 0;
 
 void loop() {
 
@@ -88,8 +88,9 @@ void loop() {
         break;  
 
         case DATA_UPDATE_POS:
-          sensors.update_pos_x( values[0] );
-          sensors.update_pos_y( values[1] );
+          sensors.update_pos( values[0], values[1] );
+
+          last_vicon = millis();
         break;
         
         default:

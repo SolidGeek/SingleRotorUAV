@@ -38,6 +38,10 @@ ay = [data.ay];
 az = [data.az];
 
 
+gx = [data.gx];
+gy = [data.gy];
+
+
 %% Kalman filter design parameters
 
 % State Vectir
@@ -81,9 +85,9 @@ sigma_acc = 0.25; % Variance of acceleration m/s^2
 %      0       dt^3/2  0       0       dt^2    0      ;
 %      0       0       dt^3/2  0       0       dt^2   ] * sigma_acc;
 
-Q = [ 1e-3   0     0      0     0     0     ;  % x
-      0     1e-3   0      0     0     0     ;  % y 
-      0     0     1e-10  0     0     0     ;  % z 
+Q = [ 1e-4   0     0      0     0     0     ;  % x
+      0     1e-4   0      0     0     0     ;  % y 
+      0     0     1e-8  0     0     0     ;  % z 
       0     0     0      1e-3   0     0     ;  % vx
       0     0     0      0     1e-3   0     ;  % vy
       0     0     0      0     0     1e-5 ];  % vz
@@ -96,9 +100,9 @@ Q = [ 1e-3   0     0      0     0     0     ;  % x
 %      0      0      0        0        2*10^-3  0 ; % Flow y
 %      0      0      0        0        0        1 ];
 
-R = [1e-3    0      0       0       0      0 ;
-     0      1e-3    0       0       0      0 ;
-     0      0      1e-7    0       0      0 ; % Lidar
+R = [1e-5    0      0       0       0      0 ;
+     0      1e-5    0       0       0      0 ;
+     0      0      1e-5    0       0      0 ; % Lidar
      0      0      0       1e-1     0      0 ; % Flow x
      0      0      0       0       1e-1    0 ; % Flow y
      0      0      0       0       0      1 ];
@@ -118,35 +122,37 @@ x(1,:) = [ 0; 0; z(1); 0; 0; 0 ];
 
 for i = 2:n
     
-    u = [ ax(i); ay(i); az(i)];
-    u = rotate_to_world( u, roll(i), pitch(i), yaw(i) );
-    %    u = [0; 0; 0];
+    p = [0; 0; z(i)];
+    p = rotate_to_world( p, roll(i), pitch(i), yaw(i) );
+    h = p(3); % Height
+
+    a = [ ax(i); ay(i); az(i)];
+    u = rotate_to_world( a, roll(i), pitch(i), yaw(i) );
+    %     u = [0; 0; 0];
     y = [ 0; 0; 0 ; 0; 0; 0 ];
     
     H = zeros(6,6);
 
 %     % Vicon at 3.3 Hz
-%     if( mod(i,60) == 0 )
-%         H(1:2, 1:2) = eye(2);
-%         y(1) = x_vicon(i);
-%         y(2) = y_vicon(i);
-%         % disp('Vicon Data');
-%     end
+    if( data(i).stat_pos == 1 )
+        H(1:2, 1:2) = eye(2);
+        y(1) = x_vicon(i);
+        y(2) = y_vicon(i);
+        disp('Vicon Data');
+    end
 
     if( data(i).stat_lidar == 1 )
-        
-        p = [0; 0; z(i)];
-        p = rotate_to_world(p, roll(i), pitch(i), yaw(i) );
-        
         H(3,3) = 1;
-        y(3) = p(3);
+        y(3) = h;
     end
     
     if( data(i).stat_flow == 1 )
         
-        v = [vx(i); vy(i); 0];
+        v = [( vx(i) - gy(i) ) * h ;
+             ( vy(i) + gx(i) ) * h;
+             0 ];
         v = rotate_to_world( v, roll(i), pitch(i), yaw(i) );
-        
+
         H(4:5, 4:5) = eye(2);
         y(4) = v(1);
         y(5) = v(2);
@@ -180,16 +186,19 @@ legend("Flow", "Kalman");
 figure(2)
 subplot(1,2,1);
 hold on
-plot( x_vicon );
-plot( x(:,1) );
+plot( x_vicon, y_vicon );
+plot( x(:,1), x(:,2) );
 legend("Vicon", "Kalman");
 hold off
+
 subplot(1,2,2);
 hold on
-plot( y_vicon );
-plot( x(:,2) );
-legend("Vicon", "Kalman");
+plot( z_vicon );
+plot( x(:,3) );
+plot( z );
+legend("Vicon", "Kalman", "Measured");
 hold off
+
 
 figure(3)
 hold on
