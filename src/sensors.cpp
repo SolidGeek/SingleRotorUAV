@@ -59,17 +59,6 @@ void Sensors::init(void){
     }
 }
 
-sensor_data_t Sensors::get_samples( void ){
-
-    sensor_data_t temp = data;
-    // data.status = {};
-    
-    return temp;
-
-}
-
-
-
 void Sensors::run_estimator(){
 
     /* ---- Sensor processing ---- */
@@ -181,7 +170,6 @@ void Sensors::sample_flow()
     static uint32_t last_sample;
     int16_t dx, dy;
     float ofx, ofy;
-    float u = data.yaw;
 
     float dt = (micros() - last_sample);
     dt = dt/1000000;

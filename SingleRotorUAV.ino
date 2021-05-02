@@ -63,7 +63,7 @@ void loop() {
 
     cmd = comm.read_udp_commands();
     if( cmd >= 0 ){
-      float value = comm.get_command_value();
+      float * values = comm.get_command_values();
       switch( cmd ){
 
         case COMMAND_LAND:
@@ -71,15 +71,15 @@ void loop() {
         break;
 
         case COMMAND_TAKEOFF:
-          control.initiate_takeoff( value );
+          control.initiate_takeoff( values[0] );
         break;
         
         case COMMAND_SETPOINT_X:
-          control.set_position_x( value );
+          control.set_position_x( values[0] );
         break;
 
         case COMMAND_SETPOINT_Y:
-          control.set_position_y( value );
+          control.set_position_y( values[0] );
         break;
         
         case COMMAND_SET_ORIGIN:
@@ -87,12 +87,9 @@ void loop() {
           control.reset_integral_action();
         break;  
 
-        case DATA_POSITION_X:
-          sensors.update_pos_x( value );
-        break;
-
-        case DATA_POSITION_Y:
-          sensors.update_pos_y( value );
+        case DATA_UPDATE_POS:
+          sensors.update_pos_x( values[0] );
+          sensors.update_pos_y( values[1] );
         break;
         
         default:

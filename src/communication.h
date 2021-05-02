@@ -8,17 +8,16 @@
 
 // Telemetry package
 typedef struct __attribute__ ((packed)){
+    uint64_t timestamp;
     sensor_data_t data;         // System output (states)
     estimator_data_t estimate;  // Estimator output 
     control_signal_t control;   // System input  (actuation)
 } tlm_data_t;
 
-
 typedef struct __attribute__ ((package)){
     uint8_t command;
-    float value;
+    float value[10];
 } command_t;
-
 
 typedef enum{
     COMMAND_ARM        = 0,
@@ -29,11 +28,8 @@ typedef enum{
     COMMAND_SETPOINT_Y = 5,
     COMMAND_SETPOINT_Z = 6,
     COMMAND_SET_ORIGIN = 7,
-    DATA_POSITION_X    = 10,
-    DATA_POSITION_Y    = 11,
-    DATA_POSITION_Z    = 12
+    DATA_UPDATE_POS    = 10,
 } command_type_t; 
-
 
 class Communication{
 
@@ -49,7 +45,7 @@ public:
     // For receiving commands: UART <-- ESP <-- WIFI
     int read_udp_commands();
 
-    float get_command_value();
+    float * get_command_values();
 
 private:
 

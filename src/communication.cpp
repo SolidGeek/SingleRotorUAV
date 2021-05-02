@@ -17,6 +17,7 @@ void Communication::write_udp_telemetry( tlm_data_t package ){
 
     memset(&telemetry_buffer, 0, sizeof(telemetry_buffer)); 
     telemetry_buffer = package;
+    package.timestamp = micros();
 
     // Send struct of data over UART
     uart_transfer->sendDatum( telemetry_buffer );
@@ -34,6 +35,6 @@ int Communication::read_udp_commands(){
     return -1;
 }
 
-float Communication::get_command_value(){
+float * Communication::get_command_values(){
     return command_buffer.value;
 }

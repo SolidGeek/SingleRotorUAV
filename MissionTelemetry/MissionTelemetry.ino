@@ -27,6 +27,7 @@ typedef struct __attribute__ ((packed)) {
 } control_signal_t;
 
 typedef struct __attribute__ ((packed)) {
+  uint64_t timestamp;
   sensor_data_t data;    // System output (states)
   estimator_data_t estimate;
   control_signal_t control; // System input  (actuation)
@@ -35,7 +36,7 @@ typedef struct __attribute__ ((packed)) {
 
 typedef struct __attribute__ ((package)) {
   uint8_t command;
-  float value;
+  float value[10]; 
 } command_t;
 
 
@@ -48,13 +49,13 @@ command_t command_buffer;
 union{
   float data;
   uint8_t bytes[4];
-} command_to_float; 
+} bytes_to_float; 
 
 int16_t command_packet_size;
 
 const uint16_t udp_tlm_size = sizeof(tlm_data_t) + 1;
 uint8_t udp_tx_buffer[udp_tlm_size]; // buffer to hold bytes before transmission
-uint8_t udp_rx_buffer[5];           // buffer to hold incoming packet
+uint8_t udp_rx_buffer[100];          // buffer to hold incoming packet
 
 int led_pin = 12;
 
@@ -86,27 +87,36 @@ void setup() {
 
 void loop() {
 
-  // UDP Commands from PC 
+  // Receive UDP Commands from PC and send to Teensy
   if ( command_packet_size = UDP.parsePacket() ){
 
     int8_t len = UDP.read( udp_rx_buffer, sizeof(udp_rx_buffer) );
 
-    // If a correct sized data is read, send this to Teensy
-    if( len == sizeof( udp_rx_buffer ) ){
+    // Minimum size for a command package
+    if( len >= 5) {
 
-      // First byte is command
-      command_buffer.command = udp_rx_buffer[0];
+        uint16_t i = 0;
+        uint8_t n = 0;
+        
+        // First byte is command
+        command_buffer.command = udp_rx_buffer[i++];
 
-      // Next 4 bytes is value. Convert to float
-      memcpy( command_to_float.bytes, &udp_rx_buffer[1], 4 );
-      command_buffer.value = command_to_float.data;
+        while ( i < len )
+        {
+            // Copy the four next bytes from the buffer into union
+            memcpy( bytes_to_float.bytes, &udp_rx_buffer[i], 4 );
 
-      // Send struct over UART to Teensy
-      uart_transfer.sendDatum( command_buffer );
+            // Extract float from union, and place it in command_buffer
+            command_buffer.value[n] = bytes_to_float.data;
+            i += 4; // Size of float32
+        }
+
+        // Send struct over UART to Teensy
+        uart_transfer.sendDatum( command_buffer );
     }
   }
 
-  // Serial structs from Teensy (telemetry)
+  // Receive structs over UART from Teensy (telemetry)
   if ( uart_transfer.available() ) {
     // Read object into telemetry_buffer
     uart_transfer.rxObj( telemetry_buffer );

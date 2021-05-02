@@ -19,7 +19,6 @@ using namespace BLA;
 #define DT 0.005f
 #define SENSOR_LIDAR_OFFSET 0.08f
 
-
 #define PMW3901_FOV 42.0f           // Degress
 #define PMW3901_WIDTH 30            // Pixels
 
@@ -71,11 +70,8 @@ public:
     void update_pos_x ( float x );
     void update_pos_y ( float y );
 
-    sensor_data_t get_samples();
-
     sensor_data_t data;
     estimator_data_t estimate;
-
     sensor_status_t status;
 
 private:
@@ -84,10 +80,6 @@ private:
     BNO080 * imu;
     PMW3901 * flow; 
     VL53L1X * lidar; 
-
-    // Calculate focal length of PMW3901 in pixels
-    const float flow_focal_length = (PMW3901_WIDTH)/( 2*tan(PMW3901_FOV/2) );
-
 
     float yaw_origin = 0;
     float yaw_raw = 0;
@@ -98,15 +90,14 @@ private:
     bool stat_pos_x = false;
     bool stat_pos_y = false;
 
+    uint32_t last_flow_sample;
+
     // Low pass filter to filter sensor data
     float LPF( float new_sample, float old_sample, float alpha );
 
     void rotate_to_world( float * vector );
 
     float rotate_yaw( float yaw );
-
-    uint32_t last_flow_sample;
-
 
 
     // Estimator matrixes
