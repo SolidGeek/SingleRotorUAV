@@ -72,12 +72,29 @@ sensor_data_t Sensors::get_samples( void ){
 
 void Sensors::run_estimator(){
 
-    // Fill H and Z matrix with zeros, until measurements are ready
+    /* ---- Sensor processing ---- */
+    float p[3] = {0}; // Position vector (z body to world)
+    float v[3] = {0}; // Velocity vector (vx, vy to world)
+    float a[3] = {0}; // Acceleration vector (ax, ay, az to world)
+
+    // Rotate lidar measurement to world frame
+    p[2] = data.z;
+    rotate_to_world( p );
+
+    // Perform gyrocompensation on flow and rotate to world frame.
+    v[0] = data.vx * p[2] - data.gy * p[2];
+    v[1] = data.vy * p[2] + data.gx * p[2];
+    rotate_to_world( v );
+
+    // Rotate acceleration to world frame
+    rotate_to_world( a );
+
+
+    /* ---- Estimation ---- */
+    // Fill input vector with acceleration
     H.Fill(0);
     Z.Fill(0);
-
-    // Fill input vector with acceleration
-    U << data.ax, data.ay, data.az;
+    U << a[0], a[1], a[2];
 
     // Fill measurement vector with data
     if( stat_pos_x == 1 ){
@@ -91,13 +108,13 @@ void Sensors::run_estimator(){
 
     if( data.status.lidar == 1){
         H(2,2) = 1;
-        Z(2) = data.z;
+        Z(2) = p[2]; // p[2]: z
     }
 
     if( data.status.flow == 1){
         H(3,3) = 1; H(4,4) = 1;
-        Z(3) = data.vx;
-        Z(4) = data.vy;
+        Z(3) = v[0]; // vx
+        Z(4) = v[1]; // vy
     }
 
     // Prediction, based on previous state and current input
@@ -132,9 +149,7 @@ void Sensors::sample_imu(){
         if( report_ID == SENSOR_REPORTID_ROTATION_VECTOR ){
             data.roll   = imu->getRoll();   // Radians
             data.pitch  = imu->getPitch();  // Radians
-            yaw_raw     = imu->getYaw();    // Radians
-
-            data.yaw = rotate_yaw( yaw_raw );
+            data.yaw    = imu->getYaw();    // Radians
         }
 
         // Linear acceleration is gravity componsated (but still measured in body frame)
@@ -143,12 +158,9 @@ void Sensors::sample_imu(){
             accel[1] = imu->getLinAccelY();
             accel[2] = imu->getLinAccelZ();
 
-            // We are only interested in acceleration in world frame
-            rotate_to_world( accel );
-
             data.ax = LPF( accel[0], data.ax, 1 ) ; // Filter coefficient 1 = No lowpass
             data.ay = LPF( accel[1], data.ay, 1 ) ;
-            data.az = LPF( accel[2], data.az, 0.8 ) ;
+            data.az = LPF( accel[2], data.az, 0.8 );
         }
 
         // Read Raw Gyro data
@@ -165,23 +177,26 @@ void Sensors::sample_imu(){
 
 void Sensors::sample_flow()
 {
+    static uint32_t last_sample;
     int16_t dx, dy;
-    float vbx, vby;
-    float vx, vy;
+    float ofx, ofy;
     float u = data.yaw;
+
+    float dt = (micros() - last_sample);
+    dt = dt/1000000;
+    
+    last_sample = micros();
     
     // Here dy and dx are flipped, to match orientation of IMU (which is placed to align with the body frame)
     flow->readMotionCount( &dy, &dx );
 
-    // Convert flow to velocity and rotate to world frame (assumes flat earth)
-    vbx = (float)dx * (data.z + SENSOR_LIDAR_OFFSET) * 0.2832; // 0.2832 = scaling factor found experimentally
-    vby = (float)dy * (data.z + SENSOR_LIDAR_OFFSET) * 0.2832;
-    vx = cos(u) * vbx - sin(u) * vby;
-    vy = sin(u) * vbx + cos(u) * vby;
+    // Convert change in pixels to unitless velocity 1/s
+    ofx = ((float)dx / dt ) * 0.0022059; // scaling factor found experimentally (could probably be expressed using )
+    ofy = ((float)dy / dt ) * 0.0022059;
 
-    // Apply sligth lowpass filter in improve filter performance
-    data.vx = LPF( vx, data.vx, 1 ); // meter / second
-    data.vy = LPF( vy, data.vy, 1 ); // meter / second
+    // Return the unitless velocity, which can be scaled by height
+    data.vx = ofx; // pixels / second
+    data.vy = ofy; // pixels / second
 
     data.status.flow = 1;
 }
@@ -202,9 +217,9 @@ void Sensors::sample_lidar(){
             zb = 0;
 
         // Rotate altitude to world frame
-        z = zb * cos( data.pitch ) * cos( data.roll );
+        // z = zb * cos( data.pitch ) * cos( data.roll );
 
-        data.z = LPF( z , data.z, 1 );
+        data.z = LPF( zb , data.z, 1 );
 
         data.status.lidar = 1;
 

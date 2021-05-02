@@ -103,7 +103,7 @@ void loop() {
       }
     }
 
-    if( micros() - flow_timer >= 10000 ){
+    if( micros() - flow_timer >= 20000 ){
       flow_timer = micros();
       // The flow sensor outputs delta changes, needs to be sampled at semi-constant interval
       sensors.sample_flow(); 

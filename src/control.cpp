@@ -191,7 +191,7 @@ void Control::run( sensor_data_t raw, estimator_data_t est ){
     uint16_t control_throttle;
 
     if( status == CONTROL_STATUS_STATIONARY ){
-        control_hover( raw.roll, raw.pitch, raw.yaw, raw.gx, raw.gy, raw.gz , 0, 0  );
+        control_hover( raw.roll, raw.pitch, 0, raw.gx, raw.gy, 0 , 0, 0  );
         control_throttle = 0;
     }
     else{          
