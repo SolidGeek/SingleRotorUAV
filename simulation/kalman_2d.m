@@ -13,17 +13,20 @@ x_vicon = x_vicon - x_vicon(1);
 y_vicon = y_vicon - y_vicon(1);
 z_vicon = z_vicon - z_vicon(1);
 
-
 x_est = [data.xt];
 y_est = [data.yt];
 z_est = [data.zt];
+
+roll = [data.roll];
+pitch = [data.pitch];
+yaw = [data.yaw];
 
 % Measured lidar data
 z = [data.z];
 
 % Measured flow data (rotated with yaw)
-vx = [data.vx]*1.18;
-vy = [data.vy]*1.18;
+vx = [data.vx];
+vy = [data.vy];
 
 % Estimated velocity
 vx_est = [data.vxt];
@@ -116,28 +119,37 @@ x(1,:) = [ 0; 0; z(1); 0; 0; 0 ];
 for i = 2:n
     
     u = [ ax(i); ay(i); az(i)];
+    u = rotate_to_world( u, roll(i), pitch(i), yaw(i) );
     %    u = [0; 0; 0];
     y = [ 0; 0; 0 ; 0; 0; 0 ];
     
     H = zeros(6,6);
 
-    % Vicon at 3.3 Hz
-    if( mod(i,60) == 0 )
-        H(1:2, 1:2) = eye(2);
-        y(1) = x_vicon(i);
-        y(2) = y_vicon(i);
-        % disp('Vicon Data');
-    end
+%     % Vicon at 3.3 Hz
+%     if( mod(i,60) == 0 )
+%         H(1:2, 1:2) = eye(2);
+%         y(1) = x_vicon(i);
+%         y(2) = y_vicon(i);
+%         % disp('Vicon Data');
+%     end
 
     if( data(i).stat_lidar == 1 )
+        
+        p = [0; 0; z(i)];
+        p = rotate_to_world(p, roll(i), pitch(i), yaw(i) );
+        
         H(3,3) = 1;
-        y(3) = z(i);
+        y(3) = p(3);
     end
     
     if( data(i).stat_flow == 1 )
+        
+        v = [vx(i); vy(i); 0];
+        v = rotate_to_world( v, roll(i), pitch(i), yaw(i) );
+        
         H(4:5, 4:5) = eye(2);
-        y(4) = vx(i);
-        y(5) = vy(i);
+        y(4) = v(1);
+        y(5) = v(2);
     end
 %     
     xpre = A*x(i-1,:)' + B*u;             % Predicted state estimate
@@ -183,6 +195,7 @@ figure(3)
 hold on
 plot3( x_vicon, y_vicon, z_vicon );
 plot3( x(:,1), x(:,2), x(:,3) );
+plot3( x_est, y_est, z_est );
 title("Position (world)");
 legend("Vicon", "Kalman", "Estimator");
 xlabel("x [m]");
@@ -220,4 +233,13 @@ function matrix_to_cpp( matrix )
         end
         disp(line);
     end
+end
+
+
+function world = rotate_to_world( body, p, q, u)
+    R = [cos(q)*cos(u), sin(p)*sin(q)*cos(u)-cos(p)*sin(u), cos(p)*sin(q)*cos(u)+sin(p)*sin(u) ;
+         cos(q)*sin(u), sin(p)*sin(q)*sin(u)+cos(p)*cos(u), cos(p)*sin(q)*sin(u)-sin(p)*cos(u) ;
+         -sin(q),       sin(p)*cos(q),                      cos(p)*cos(q)                     ];
+
+    world = R * body;
 end

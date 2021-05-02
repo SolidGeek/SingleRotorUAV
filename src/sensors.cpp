@@ -149,7 +149,8 @@ void Sensors::sample_imu(){
         if( report_ID == SENSOR_REPORTID_ROTATION_VECTOR ){
             data.roll   = imu->getRoll();   // Radians
             data.pitch  = imu->getPitch();  // Radians
-            data.yaw    = imu->getYaw();    // Radians
+            yaw_raw     = imu->getYaw();    // Radians
+            data.yaw    = rotate_yaw( yaw_raw );  
         }
 
         // Linear acceleration is gravity componsated (but still measured in body frame)
@@ -203,7 +204,7 @@ void Sensors::sample_flow()
 
 void Sensors::sample_lidar(){
 
-    float z, zb;
+    float zb;
 
     if( lidar->dataReady() ){
 

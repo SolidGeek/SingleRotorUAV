@@ -43,7 +43,7 @@ void Control::init( )
 void Control::set_servo_offsets( int16_t * offsets ){
     for (uint8_t i = 0; i < 4; i++)
     {   
-        Serial.println(offsets[i]);
+        // Serial.println(offsets[i]);
         servo_offset[i] = offsets[i];
     }
 }
