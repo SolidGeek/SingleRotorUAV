@@ -1,7 +1,7 @@
 % First run record.m, to sample data from UDP
 % Next run this 
 
-% load('walking_test_with_vicon_data.mat')
+load('perfect_kalman_with_vicon_02_05_2021')
 
 
 %% Data Import
@@ -25,8 +25,8 @@ yaw = [data.yaw];
 z = [data.z];
 
 % Measured flow data (rotated with yaw)
-vx = [data.vx];
-vy = [data.vy];
+vx = [data.vx]*1.1;
+vy = [data.vy]*1.1;
 
 % Estimated velocity
 vx_est = [data.vxt];
@@ -103,8 +103,8 @@ Q = [ 1e-5   0     0      0     0     0     ;  % x
 R = [1e-5    0      0       0       0      0 ;
      0      1e-5    0       0       0      0 ;
      0      0      1e-4    0       0      0 ; % Lidar
-     0      0      0       1e-3    0      0 ; % Flow x
-     0      0      0       0       1e-3    0 ; % Flow y
+     0      0      0       5e-3    0      0 ; % Flow x
+     0      0      0       0       5e-3    0 ; % Flow y
      0      0      0       0       0      1 ];
 
 G = eye(6)*1;
@@ -164,30 +164,41 @@ end
 
 %% Plotting
 
-figure(1)
+blue        = '#0051ff';
+light_blue  = '#b3cbff';
+red         = '#ff0000';
+light_red   = '#ffb3b3';
+green       = '#06ad00';
+light_green = '#9de69a';
+black       = '#000000';
+
+figure('Name', 'Velocity', 'Position', [10 10 1000 400])
 subplot(1,3,1)
 hold on
-plot( vx, 'LineWidth', 2  );
-plot( x(:,4));
+plot( vx, 'Color', light_red  );
+plot( x(:,4), 'LineWidth', 1.5, 'Color', red);
 hold off
 grid on
+ylim([-2 2]);
 title("Velocity (x-axis)");
-legend("Flow", "Kalman", "Estimator");
+legend("Flow", "Kalman");
 
 subplot(1,3,2)
 hold on
-plot( vy, 'LineWidth', 2  );
-plot( x(:,5));
+plot( vy, 'Color', light_blue);
+plot( x(:,5), 'LineWidth', 1.5, 'Color', blue);
 hold off
 grid on
+ylim([-2 2]);
 title("Velocity (y-axis)");
 legend("Flow", "Kalman");
 
 subplot(1,3,3)
 hold on
-plot( x(:,6));
+plot( x(:,6), 'LineWidth', 1.5, 'Color', green);
 hold off
 grid on
+ylim([-2 2]);
 title("Velocity (z-axis)");
 legend("Kalman");
 
@@ -212,11 +223,13 @@ figure(3)
 hold on
 plot3( x_vicon, y_vicon, z_vicon );
 plot3( x(:,1), x(:,2), x(:,3) );
-plot3( x_est, y_est, z_est );
+% plot3( x_est, y_est, z_est );
 title("Position (world)");
-legend("Vicon", "Kalman", "Estimator");
+legend("Vicon", "Kalman");
 xlabel("x [m]");
 ylabel("y [m]");
+zlabel("z [m]");
+view(3);
 axis equal
 grid on
 
