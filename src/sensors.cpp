@@ -71,8 +71,8 @@ void Sensors::run_estimator(){
     rotate_to_world( p );
 
     // Perform gyrocompensation on flow and rotate to world frame.
-    v[0] = data.vx * p[2] - data.gy * p[2];
-    v[1] = data.vy * p[2] - data.gx * p[2]; // Dunno why this is minus (-), but works better.
+    v[0] = data.vx * p[2] + data.gy * p[2];
+    v[1] = data.vy * p[2] - data.gx * p[2]; 
     rotate_to_world( v );
 
     // Rotate acceleration to world frame
@@ -135,7 +135,7 @@ void Sensors::sample_imu(){
         // roll and pitch are flipped because of IMU orientation
         if( report_ID == SENSOR_REPORTID_ROTATION_VECTOR ){
             data.roll   = imu->getPitch();  // Radians 
-            data.pitch  = imu->getRoll();   // Radians
+            data.pitch  = -imu->getRoll();   // Radians
             yaw_raw     = imu->getYaw();    // Radians
             data.yaw    = rotate_yaw( yaw_raw );  
         }
@@ -154,7 +154,7 @@ void Sensors::sample_imu(){
         // gx and gy are flipped because of IMU orientation
         if( report_ID == SENSOR_REPORTID_GYROSCOPE ) {
             data.gx = LPF( imu->getGyroY(), data.gx, 0.8 ); // Radians / second
-            data.gy = LPF( imu->getGyroX(), data.gy, 0.8 ); // Radians / second
+            data.gy = LPF( -imu->getGyroX(), data.gy, 0.8 ); // Radians / second
             data.gz = LPF( imu->getGyroZ(), data.gz, 0.8 ); // Radians / second
         }
 

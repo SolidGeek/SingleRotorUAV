@@ -1,7 +1,7 @@
 % First run record.m, to sample data from UDP
 % Next run this 
 
-load('perfect_kalman_with_vicon_02_05_2021')
+% load('perfect_kalman_with_vicon_02_05_2021')
 
 
 %% Data Import
@@ -148,7 +148,7 @@ for i = 2:n
     
     if( data(i).stat_flow == 1 )
         
-        v = [( vx(i) - gy(i) ) * h;
+        v = [( vx(i) + gy(i) ) * h;
              ( vy(i) - gx(i) ) * h;
              0 ];
         v = rotate_to_world( v, roll(i), pitch(i), yaw(i) );
@@ -223,9 +223,9 @@ figure(3)
 hold on
 plot3( x_vicon, y_vicon, z_vicon );
 plot3( x(:,1), x(:,2), x(:,3) );
-% plot3( x_est, y_est, z_est );
+plot3( x_est, y_est, z_est );
 title("Position (world)");
-legend("Vicon", "Kalman");
+legend("Vicon", "Kalman", "Est");
 xlabel("x [m]");
 ylabel("y [m]");
 zlabel("z [m]");

@@ -171,8 +171,9 @@ void Control::control_position( float x, float y, float vx, float vy, float yaw 
 
     // Use the output of the positional controller as setpoints for the hover controller
     // Outputs are flipped because of sensor orientation
-    SP_hover(0) = -output(1);
-    SP_hover(1) = output(0);
+    SP_hover(0) = output(0);
+    SP_hover(1) = output(1);
+
 
 }
 
@@ -191,20 +192,19 @@ void Control::run( sensor_data_t raw, estimator_data_t est ){
     uint16_t control_throttle;
 
     if( status == CONTROL_STATUS_STATIONARY ){
-        control_hover( 0, 0, 0, raw.gx, raw.gy, 0 , 0, 0  );
+        control_hover( raw.roll, raw.pitch, 0, raw.gx, raw.gy, 0, 0, 0 );
         control_throttle = 0;
-    }
-    else{          
-        // control_position( est.x, est.y, est.vx, est.vy, raw.yaw );
+    }else{          
+        control_position( est.x, est.y, est.vx, est.vy, raw.yaw );
         control_hover( raw.roll, raw.pitch, raw.yaw, raw.gx, raw.gy, raw.gz , est.z, est.vz  );
         control_throttle = (uint16_t)(MOTOR_KRPM_TO_DSHOT * U(4));
     }
 
     // Actuate servos
     write_servo(0, U(0) );
-    write_servo(1, U(1) );
+    write_servo(1, -U(1) );
     write_servo(2, -U(2) );
-    write_servo(3, -U(3) ); 
+    write_servo(3, U(3) ); 
 
     data.a1 = U(0);
     data.a2 = U(1);
@@ -223,17 +223,14 @@ void Control::run( sensor_data_t raw, estimator_data_t est ){
 }
 
 void Control::reset_integral_action( void ){
-
     error_integral_x = 0;
     error_integral_y = 0;
     error_integral_z = 0;
-
 }
 
 void Control::set_max_throttle( uint16_t dshot ){
     max_throttle = dshot;
 }
-
 
 void Control::servo_calibration( int16_t * servo_offset ){
     Serial.println("Performing Servo Calibration. Write OK, when done. ");
