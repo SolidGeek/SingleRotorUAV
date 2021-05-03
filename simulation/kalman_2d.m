@@ -229,8 +229,10 @@ legend("Vicon", "Kalman", "Est");
 xlabel("x [m]");
 ylabel("y [m]");
 zlabel("z [m]");
+xlim([-2 2]);
+ylim([-2 2]);
+zlim([0 1]);
 view(3);
-axis equal
 grid on
 
 

@@ -85,8 +85,18 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
 
     // Integral action for altitude (z)
     float error_z = SP_hover(6) - z; 
-    if( data.dshot < max_throttle || error_z < 0 )
+    if( data.dshot < max_throttle || error_z < 0 ){
+        // Smoother landing
+        if( status == CONTROL_STATUS_LANDING ){
+            if( z < 0.2 ){
+                error_z = error_z * 1.2; // LAND
+            }else{
+                error_z = error_z * 0.2;
+            }
+            
+        }
         error_integral_z += error_z * CONTROL_LOOP_INTERVAL;
+    }
 
     // Load states into state-vector (int_z = integral term)
     X << roll, pitch, yaw, gx, gy, gz, z, vz, 0;
@@ -99,9 +109,9 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
         error(2) -= TWO_PI ;
 
 
-    // If commanded to land, remove P-control from altitude (simply reduce integral)
+    // If commanded to land, remove P-control from altitude and reduce integral-control
     if( status == CONTROL_STATUS_LANDING ){
-        K(4,6) = 0;
+        K(4,6) = 0;          // Remove P-gain
     }
 
     // Run Controller
@@ -153,10 +163,9 @@ void Control::control_position( float x, float y, float vx, float vy, float yaw 
     error(2) = error(2)*cos(yaw) + error(3)*sin(yaw);  // vx
     error(3) = error(3)*cos(yaw) - error(2)*sin(yaw);  // vy
 
-
-    // If integral sum generates output larger than min max, should stop integral growth
-    error_integral_x += Limit( error(0), -1, 1) * CONTROL_LOOP_INTERVAL;
-    error_integral_y += Limit( error(1), -1, 1) * CONTROL_LOOP_INTERVAL;
+    // Integral limit
+    error_integral_x = Limit( error_integral_x, -pos_int_limit, pos_int_limit );
+    error_integral_y = Limit( error_integral_y, -pos_int_limit, pos_int_limit );
 
     // Load integral error 
     error(4) = error_integral_x;
