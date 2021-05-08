@@ -202,6 +202,10 @@ R = [ 1/10^2   0       0       0       0       ; % a1
 % Compute "optimal" controller
 K_lqr = lqr(sys_int, Q, R);
 
+sys_d = c2d(sys_int, 0.001, 'zoh' );
+
+K_lqrd = dlqr(sys_d.A, sys_d.B, Q, R);
+
 matrix_to_cpp( K_lqr )
 
 % Calcuate closed loop system
