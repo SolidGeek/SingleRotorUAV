@@ -1,7 +1,7 @@
 % First run record.m, to sample data from UDP
 % Next run this 
 
-% load('perfect_kalman_with_vicon_02_05_2021')
+load('perfect_kalman_with_vicon_02_05_2021')
 
 
 %% Data Import

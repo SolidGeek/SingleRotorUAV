@@ -180,17 +180,17 @@ sys_hint = ss(A_hint, B_hint, C_hint, D_hint);
 
 % Bryson's Rule. 
 % Max angle of 0.3 radians. Maximum angular rate of 5 rad/second
-Q = [ 10^2     0        0        0      0      0      0        0       ;  % Roll
-      0        10^2     0        0      0      0      0        0       ;  % Pitch
-      0        0        10^0    0      0      0      0        0       ;  % Yaw
-      0        0        0        10^0  0      0      0        0       ;  % omega_x
-      0        0        0        0      10^0  0      0        0       ;  % omega_y
-      0        0        0        0      0      10^0  0        0       ;  % omega_z
-      0        0        0        0      0      0      10^0    0       ;  % z
-      0        0        0        0      0      0      0        10^-0  ]; % v_z
+Q = [ 1/0.1^2     0        0        0      0      0      0        0    ;  % Roll
+      0        1/0.1^2     0        0      0      0      0        0    ;  % Pitch
+      0        0        1/1^2    0      0      0      0        0       ;  % Yaw
+      0        0        0        1/1^2  0      0      0        0       ;  % omega_x
+      0        0        0        0      1/2^2  0      0        0       ;  % omega_y
+      0        0        0        0      0      1/2^2  0        0       ;  % omega_z
+      0        0        0        0      0      0      1/0.5^2    0       ;  % z
+      0        0        0        0      0      0      0        1/1^2  ]; % v_z
   
 % Integral action  
-Q(9,9) = [ 50 ]; % z
+Q(9,9) = [ 1/0.15^2 ]; % z
       
 % Max actuation angle of +-10 degress
 R = [ 1/10^2   0       0       0       0       ; % a1
@@ -202,7 +202,9 @@ R = [ 1/10^2   0       0       0       0       ; % a1
 % Compute "optimal" controller
 K_lqr = lqr(sys_int, Q, R);
 
-sys_d = c2d(sys_int, 0.001, 'zoh' );
+int_lim = wt/K_lqr(5,9) + wt*0.005;
+
+sys_d = c2d(sys_int, 0.008, 'zoh' );
 
 K_lqrd = dlqr(sys_d.A, sys_d.B, Q, R);
 
@@ -212,16 +214,16 @@ matrix_to_cpp( K_lqr )
 % cl_sys = ss((A_red - B_red*K_lqr), B_red, C_red, D_red );
 
 
-Q_hor = [1/0.05^2  0       0       0;
-         0      1/0.05^2   0       0;
-         0      0       1/0.5^2  0;
-         0      0       0       1/0.5^2 ];
+Q_hor = [ 1/0.5^2  0         0        0        ;
+          0         1/0.5^2  0        0        ;
+          0         0         1/2^2  0        ;
+          0         0         0        1/2^2 ];
      
-Q_hor(5:6,5:6) = [10^2  0
-                  0   10^2];
+Q_hor(5:6,5:6) = [ 1/1^2  0
+                   0        1/1^2];
      
-R_hor = [1/0.005^2   0;
-         0         1/0.005^2];
+R_hor = [ 1/0.05^2  0;
+          0          1/0.05^2];
 
 K_hint = lqr(sys_hint, Q_hor, R_hor);
 

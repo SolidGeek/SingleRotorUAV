@@ -48,7 +48,7 @@ function dx = nonlinear_dynamics(t, x, u)
         dx = [dp; dq; dc; dwx; dwy; dwz; dpx; dpy; dpz; dvx; dvy; dvz];
     else
         % Return the derivatives
-        dx = [dp; dq; dc; dwx; dwy; dwz; dpx; dpy; 0; dvx; dvy; 0];
+        dx = [dp; dq; dc; dwx; dwy; dwz; 0; 0; 0; 0; 0; 0];
     end
     
 
