@@ -178,10 +178,10 @@ void Sensors::sample_flow()
     flow->readMotionCount( &dy, &dx );
 
     // Convert change in pixels to unitless velocity 1/s
-    ofx = ((float)dx / dt ) * 0.0022059; // scaling factor found experimentally (could probably be expressed using )
-    ofy = ((float)dy / dt ) * 0.0022059;
+    ofx = ((float)dx / dt ) / PMW3901_FOCAL; // Focal length (in px) found experimentally
+    ofy = ((float)dy / dt ) / PMW3901_FOCAL;
 
-    // Return the unitless velocity, which can be scaled by height
+    // Return the unitless velocity, which can be scaled by height above ground (z)
     data.vx = ofx; // pixels / second
     data.vy = ofy; // pixels / second
 

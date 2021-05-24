@@ -20,6 +20,7 @@ using namespace BLA;
 #define SENSOR_LIDAR_OFFSET 0.08f
 
 #define PMW3901_FOV 42.0f           // Degress
+#define PMW3901_FOCAL 412.27f       // Focal length in pixels (found experimentally using pin-hole model)
 #define PMW3901_WIDTH 30            // Pixels
 
 typedef struct __attribute__ ((packed)){
