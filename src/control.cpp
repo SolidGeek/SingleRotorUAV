@@ -83,6 +83,10 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
     Matrix<9,1> error; // State error vector
     Matrix<5,9> K = K_hover; 
 
+    // Add the output of the position controller to the hover setpoint
+    SP_hover(0) += U_pos(0);
+    SP_hover(1) += U_pos(1);
+
     // Integral action for altitude (z)
     float error_z = SP_hover(6) - z; 
     if( data.dshot < max_throttle || error_z < 0 ){
@@ -134,16 +138,17 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
 }
 
 
-void Control::set_position_x( float x ){
-    SP_pos(0) = x;
-}
+void Control::set_reference( control_setpoint_t id, float value ){
 
-void Control::set_position_y( float y ){
-    SP_pos(1) = y;
-}
+    switch( id ){
+        case SETPOINT_X: SP_pos(0) = value; break;
+        case SETPOINT_Y: SP_pos(1) = value; break;
+        case SETPOINT_Z: SP_hover(6) = value; break;
+        case SETPOINT_ROLL: SP_hover(0) = value; break;
+        case SETPOINT_PITCH: SP_hover(1) = value; break;
+        case SETPOINT_YAW: SP_hover(2) = value; break;
+    }
 
-void Control::set_position_z( float z ){
-    SP_hover(6) = z;
 }
 
 void Control::control_position( float x, float y, float vx, float vy, float yaw ){
@@ -179,21 +184,22 @@ void Control::control_position( float x, float y, float vx, float vy, float yaw 
     output(1) = Limit( output(1), -10 * DEG_TO_RAD, 10 * DEG_TO_RAD );
 
     // Use the output of the positional controller as setpoints for the hover controller
-    // Outputs are flipped because of sensor orientation
-    SP_hover(0) = output(0);
-    SP_hover(1) = output(1);
+    U_pos = output;
+    
+    // SP_hover(0) = output(0);
+    // SP_hover(1) = output(1);
 
 
 }
 
 void Control::initiate_landing(){
     status = CONTROL_STATUS_LANDING;
-    set_position_z( 0 );
+    set_reference( SETPOINT_Z, 0 );
 }
 
 void Control::initiate_takeoff( float target_altitude ){
     status = CONTROL_STATUS_FLYING;
-    set_position_z( target_altitude );
+    set_reference( SETPOINT_Z, target_altitude );
 }
 
 void Control::run( sensor_data_t raw, estimator_data_t est ){
@@ -203,6 +209,9 @@ void Control::run( sensor_data_t raw, estimator_data_t est ){
     if( status == CONTROL_STATUS_STATIONARY ){
         control_hover( raw.roll, raw.pitch, 0, raw.gx, raw.gy, 0, 0, 0 );
         control_throttle = 0;
+
+        // Roll pitch test
+        control_throttle = 1500; // Will be limited by max-throttle
     }else{          
         control_position( est.x, est.y, est.vx, est.vy, raw.yaw );
         control_hover( raw.roll, raw.pitch, raw.yaw, raw.gx, raw.gy, raw.gz , est.z, est.vz  );

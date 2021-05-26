@@ -25,11 +25,14 @@ typedef enum{
     COMMAND_DISARM     = 1,
     COMMAND_TAKEOFF    = 2,
     COMMAND_LAND       = 3,
-    COMMAND_SETPOINT_X = 4,
-    COMMAND_SETPOINT_Y = 5,
-    COMMAND_SETPOINT_Z = 6,
-    COMMAND_SET_ORIGIN = 7,
-    DATA_UPDATE_POS    = 10,
+    COMMAND_SET_X      = 4,
+    COMMAND_SET_Y      = 5,
+    COMMAND_SET_Z      = 6,
+    COMMAND_SET_ROLL   = 7,
+    COMMAND_SET_PITCH  = 8,
+    COMMAND_SET_YAW    = 9,
+    COMMAND_SET_ORIGIN = 10,
+    DATA_UPDATE_POS    = 11,
 } command_type_t; 
 
 class Communication{

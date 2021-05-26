@@ -25,6 +25,15 @@ typedef enum{
     CONTROL_STATUS_LANDING,
 } control_status_t; 
 
+typedef enum{
+    SETPOINT_X = 0,
+    SETPOINT_Y,
+    SETPOINT_Z,
+    SETPOINT_ROLL,
+    SETPOINT_PITCH,
+    SETPOINT_YAW
+} control_setpoint_t;
+
 using namespace BLA;
 
 typedef struct __attribute__ ((packed)){
@@ -62,9 +71,7 @@ public:
 
     void set_max_throttle( uint16_t dshot );
 
-    void set_position_x( float x );
-    void set_position_y( float y );
-    void set_position_z( float z );
+    void set_reference( control_setpoint_t id, float value );
 
     // Calibration
     void servo_calibration( int16_t * servo_offset );
@@ -136,6 +143,9 @@ private:
 
     // Setpoints for position controller (x, y, vx, vy, xint, yint)
     Matrix<6,1> SP_pos = {0,0,0,0,0,0};
+
+    // Output from position controller
+    Matrix<2,1> U_pos = {0,0};
 
     uint16_t max_throttle = DSHOT_MAX_OUTPUT;
 

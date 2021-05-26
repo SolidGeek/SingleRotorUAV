@@ -74,12 +74,24 @@ void loop() {
           control.initiate_takeoff( values[0] );
         break;
         
-        case COMMAND_SETPOINT_X:
-          control.set_position_x( values[0] );
+        case COMMAND_SET_X:
+          control.set_reference( SETPOINT_X, values[0] );
         break;
 
-        case COMMAND_SETPOINT_Y:
-          control.set_position_y( values[0] );
+        case COMMAND_SET_Y:
+          control.set_reference( SETPOINT_Y, values[0] );
+        break;
+
+        case COMMAND_SET_ROLL:
+          control.set_reference( SETPOINT_ROLL, values[0] );
+        break;
+
+        case COMMAND_SET_PITCH:
+          control.set_reference( SETPOINT_PITCH, values[0] );
+        break;
+
+        case COMMAND_SET_YAW:
+          control.set_reference( SETPOINT_YAW, values[0] );
         break;
         
         case COMMAND_SET_ORIGIN:
@@ -127,7 +139,7 @@ void loop() {
         control.reset_integral_action();
       }
 
-      // Save control and estimates to tlm.
+      // Save control and estimates to tlm. Write telemetry
       tlm.estimate = sensors.estimate;
       tlm.control = control.data;
       comm.write_udp_telemetry( tlm );
