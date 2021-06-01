@@ -19,6 +19,8 @@ function dx = nonlinear_dynamics(t, x, u)
     l = 0.09471940;     % m
     r = 0.04;           % m 
     
+    % Include motor model
+    % Include nonlinear lift and drag coefficients
     
     % Nonlinear dynamics
     dp = wx + (wz*cos(p)*sin(q))/cos(q) + (wy*sin(p)*sin(q))/cos(q);

@@ -148,9 +148,9 @@ C_hor = eye(4);
 D_hor = zeros(4,2);
 
 % Reduced model with integral action states
-G_i = [ 0 0 0 0 0 0 1 0 ]; % z
+G_hov = [ 0 0 0 0 0 0 1 0 ]; % z
    
-A_int = [A_red; G_i];
+A_int = [A_red; G_hov];
 A_int = [A_int zeros(9,1) ];
 B_int = [B_red; zeros(1,5) ];
 C_int = eye(9);
@@ -158,10 +158,10 @@ D_int = zeros(9,5);
 
 
 % Horizontal model with integral action states
-G_hi = [ 1 0 0 0; 
+G_pos = [ 1 0 0 0; 
          0 1 0 0 ];
 
-A_hint = [A_hor; G_hi];
+A_hint = [A_hor; G_pos];
 A_hint = [A_hint zeros(6,2) ];
 B_hint = [B_hor; zeros(2,2) ];
 C_hint = eye(6);
@@ -184,7 +184,7 @@ Q = [ 1/0.1^2     0        0        0      0      0      0        0    ;  % Roll
       0        1/0.1^2     0        0      0      0      0        0    ;  % Pitch
       0        0        1/1^2    0      0      0      0        0       ;  % Yaw
       0        0        0        1/1^2  0      0      0        0       ;  % omega_x
-      0        0        0        0      1/2^2  0      0        0       ;  % omega_y
+      0        0        0        0      1/1^2  0      0        0       ;  % omega_y
       0        0        0        0      0      1/2^2  0        0       ;  % omega_z
       0        0        0        0      0      0      1/0.5^2    0       ;  % z
       0        0        0        0      0      0      0        1/1^2  ]; % v_z
@@ -200,15 +200,15 @@ R = [ 1/10^2   0       0       0       0       ; % a1
       0        0       0       0       1/1^2  ]; % wt
 
 % Compute "optimal" controller
-K_lqr = lqr(sys_int, Q, R);
+K_hov = lqr(sys_int, Q, R);
 
-int_lim = wt/K_lqr(5,9) + wt*0.005;
+int_lim = wt/K_hov(5,9) + wt*0.005;
 
 sys_d = c2d(sys_int, 0.008, 'zoh' );
 
 K_lqrd = dlqr(sys_d.A, sys_d.B, Q, R);
 
-matrix_to_cpp( K_lqr )
+matrix_to_cpp( K_hov )
 
 % Calcuate closed loop system
 % cl_sys = ss((A_red - B_red*K_lqr), B_red, C_red, D_red );
@@ -225,7 +225,7 @@ Q_hor(5:6,5:6) = [ 1/1^2  0
 R_hor = [ 1/0.05^2  0;
           0          1/0.05^2];
 
-K_hint = lqr(sys_hint, Q_hor, R_hor);
+K_pos = lqr(sys_hint, Q_hor, R_hor);
 
 matrix_to_cpp( K_hint )
 
