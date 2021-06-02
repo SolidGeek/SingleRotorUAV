@@ -112,6 +112,8 @@ B3 = jacobian( f_hor, U_hor );
 % All the states is zero at the hover point
 x = 0; y = 0; z = 0; vx = 0; vy = 0; vz = 0; p = 0; q = 0; u = 0; wx = 0; wy = 0; wz = 0;
 
+subs(B)
+
 % All input is not zero!
 a1 = 0; a2 = 0; a3 = 0; a4 = 0; 
 wt = 20.062; % kRPM = hoverpoint
@@ -227,7 +229,7 @@ R_hor = [ 1/0.05^2  0;
 
 K_pos = lqr(sys_hint, Q_hor, R_hor);
 
-matrix_to_cpp( K_hint )
+matrix_to_cpp( K_pos )
 
 %% Symbolic Discretization
 
