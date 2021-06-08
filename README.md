@@ -2,9 +2,9 @@
 
 This repository contains the source code for my master thesis project in control and automation. The master thesis aims to provide a hardware platform that can be used to mimic the concept of reusable rockets, in a safe environment. A custom hardware platform has been developed, using the mono-copter principle of flight.
 
-![harware2](https://user-images.githubusercontent.com/3758564/121255643-ee6cc280-c8ab-11eb-9352-6f9b62821de6.PNG)
+![3D-CAD model](https://user-images.githubusercontent.com/3758564/121255643-ee6cc280-c8ab-11eb-9352-6f9b62821de6.PNG  | width=500)
 
-![hardware](https://user-images.githubusercontent.com/3758564/121256355-c03bb280-c8ac-11eb-8877-31acb0841e57.png)
+![Physical platform](https://user-images.githubusercontent.com/3758564/121256355-c03bb280-c8ac-11eb-8877-31acb0841e57.png  | width=500)
 
 The code is seperated into three parts; the flight controller, the ground station and the MATLAB Simulink simulation.
 
