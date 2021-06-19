@@ -10,6 +10,9 @@ To see the drone in action, see https://youtu.be/jJKNR2vzTVY
 <br>
 <img src="https://user-images.githubusercontent.com/3758564/121256355-c03bb280-c8ac-11eb-8877-31acb0841e57.png" width="500">
 
+![electronics](https://user-images.githubusercontent.com/3758564/122657546-af205a80-d164-11eb-80fb-f0da287ae0d1.jpg)
+
+
 The code is seperated into three parts; the flight controller, the ground station and the MATLAB Simulink simulation.
 
 ## Flight Controller
