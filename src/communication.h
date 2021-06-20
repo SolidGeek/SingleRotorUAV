@@ -32,7 +32,8 @@ typedef enum{
     COMMAND_SET_PITCH  = 8,
     COMMAND_SET_YAW    = 9,
     COMMAND_SET_ORIGIN = 10,
-    DATA_UPDATE_POS    = 11,
+    COMMAND_LOITER     = 11,
+    DATA_UPDATE_POS    = 20
 } command_type_t; 
 
 class Communication{

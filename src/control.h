@@ -15,6 +15,10 @@
 #define MOTOR_MIN_DSHOT 0
 #define MOTOR_MAX_DSHOT 1500 // No more is needed to lift aircraft.
 
+#define SETPOINT_MAX_Z 1.0f // Max altitude
+#define SETPOINT_MAX_ROLL 0.1f // Max roll (radians)
+#define SETPOINT_MAX_PITCH 0.1f // Max pitch (radians)
+
 // Maps the kRPM output of the controller to DSHOT values. This varies with voltage, thus should probably implement RPM controller at some point
 #define MOTOR_KRPM_TO_DSHOT 72.43f 
 #define CONTROL_LOOP_INTERVAL 0.005f
@@ -73,6 +77,9 @@ public:
 
     void set_reference( control_setpoint_t id, float value );
 
+    // Read external input and use as setpoints
+    void read_control_input();
+
     // Calibration
     void servo_calibration( int16_t * servo_offset );
 
@@ -89,7 +96,6 @@ private:
     control_status_t status = CONTROL_STATUS_STATIONARY; 
 
     static const uint16_t servo_pins[];
-    static const uint16_t receiver_pins[];
 
     // LQR optimal gain for attitude controller
     /* 
@@ -127,7 +133,7 @@ private:
                             0.1691,   0.0000,   0.1860,   0.0000,   0.0500,   0.0000, };
                             // x      // y      // vx     // vy     // xint   // yint
 
-    float pos_int_limit = 0.4; // Max integral error in position
+    float pos_int_limit = 0.6; // Max integral error in position
 
     // State vector roll, pitch, yaw, gx, gy, gz, z, vz, zi
     Matrix<9,1> X = {0,0,0,0,0,0,0,0,0};

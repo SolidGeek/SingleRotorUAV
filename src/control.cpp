@@ -3,7 +3,39 @@
 DShot motors(2); 
 
 const uint16_t Control::servo_pins[] = { SERVO_1_PIN, SERVO_2_PIN, SERVO_3_PIN, SERVO_4_PIN };
-const uint16_t Control::receiver_pins[] = {18, 19, 23, 1};
+
+/* Interrupts to read RC control inputs */
+const uint16_t rc_pins[] = {18, 19, 23, 1};
+volatile uint16_t rc_input[4];
+volatile elapsedMicros rc_input_timer[4];
+
+void rc_input_isr0(){
+    if( digitalReadFast(rc_pins[0]) == HIGH )
+        rc_input_timer[0] = 0;
+    else 
+        rc_input[0] = rc_input_timer[0];
+}
+
+void rc_input_isr1(){
+    if( digitalReadFast(rc_pins[1]) == HIGH )
+        rc_input_timer[1] = 0;
+    else 
+        rc_input[1] = rc_input_timer[1];
+}
+
+void rc_input_isr2(){
+    if( digitalReadFast(rc_pins[2]) == HIGH )
+        rc_input_timer[2] = 0;
+    else 
+        rc_input[2] = rc_input_timer[2];
+}
+
+void rc_input_isr3(){
+    if( digitalReadFast(rc_pins[3]) == HIGH )
+        rc_input_timer[3] = 0;
+    else 
+        rc_input[3] = rc_input_timer[3];
+}
 
 Control::Control(){
     // Allocate four servo objects
@@ -16,6 +48,12 @@ Control::Control(){
 
 void Control::init( )
 {
+    
+    attachInterrupt( rc_pins[0], rc_input_isr0, CHANGE );
+    attachInterrupt( rc_pins[1], rc_input_isr1, CHANGE );
+    attachInterrupt( rc_pins[2], rc_input_isr2, CHANGE );
+    attachInterrupt( rc_pins[3], rc_input_isr3, CHANGE );
+
     // Configure servo motors
     for( uint8_t i = 0; i < 4; i++){
         // Configure min/max PWM for servos
@@ -76,24 +114,53 @@ void Control::write_servo_ms( uint8_t index, uint16_t ms ){
 }
 
 
+void Control::read_control_input(){
+
+    uint16_t input1 = constrain( rc_input[0], 1100, 1900);
+    float z_ref = ((float)map(input1, 1100, 1900, 0, (uint16_t)(SETPOINT_MAX_Z*1000)))/1000;
+
+    uint16_t input2 = constrain( rc_input[1], 1100, 1900);
+    float roll_ref = ((float)map(input2, 1100, 1900, -(uint16_t)(SETPOINT_MAX_ROLL*1000), (uint16_t)(SETPOINT_MAX_ROLL*1000)))/1000;
+
+    uint16_t input3 = constrain( rc_input[2], 1100, 1900);
+    float pitch_ref = ((float)map(input3, 1100, 1900, -(uint16_t)(SETPOINT_MAX_PITCH*1000), (uint16_t)(SETPOINT_MAX_PITCH*1000)))/1000;
+
+
+    if( z_ref == 0 ){
+        set_max_throttle(0); // Kill throttle
+        reset_integral_action();
+    }
+
+
+    SP_hover(0) = roll_ref;
+    SP_hover(1) = pitch_ref;
+    SP_hover(6) = z_ref;
+
+}
+
 
 void Control::control_hover( float roll, float pitch, float yaw, float gx, float gy, float gz, float z, float vz ){
     
     Matrix<5,1> output; // Output vector
     Matrix<9,1> error; // State error vector
     Matrix<5,9> K = K_hover; 
+    Matrix<9,1> ref = SP_hover;
 
     // Add the output of the position controller to the hover setpoint
-    SP_hover(0) += U_pos(0);
-    SP_hover(1) += U_pos(1);
+    ref(0) += U_pos(0);
+    ref(1) += U_pos(1);
 
     // Integral action for altitude (z)
-    float error_z = SP_hover(6) - z; 
+    float error_z = ref(6) - z; 
     if( data.dshot < max_throttle || error_z < 0 ){
         // Smoother landing
         if( status == CONTROL_STATUS_LANDING ){
-            if( z < 0.2 ){
-                error_z = error_z * 1.2; // LAND
+            if( z < 0.01 ){ // 10mm above ground
+                // We have landing, stop engines
+                status = CONTROL_STATUS_STATIONARY;
+            }
+            else if( z < 0.2 ){
+                error_z = error_z * 1.2; // Reduce integral fast
             }else{
                 error_z = error_z * 0.2;
             }
@@ -105,7 +172,7 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
     // Load states into state-vector (int_z = integral term)
     X << roll, pitch, yaw, gx, gy, gz, z, vz, 0;
 
-    error = SP_hover - X;
+    error = ref - X;
     error(8) = error_integral_z; // Insert integral term into the state-error vector
 
     // Special case for yaw:
@@ -168,7 +235,10 @@ void Control::control_position( float x, float y, float vx, float vy, float yaw 
     error(2) = error(2)*cos(yaw) + error(3)*sin(yaw);  // vx
     error(3) = error(3)*cos(yaw) - error(2)*sin(yaw);  // vy
 
-    // Integral limit
+    // Integral computation and limit
+    error_integral_x += error(0) * CONTROL_LOOP_INTERVAL;
+    error_integral_y += error(1) * CONTROL_LOOP_INTERVAL;
+
     error_integral_x = Limit( error_integral_x, -pos_int_limit, pos_int_limit );
     error_integral_y = Limit( error_integral_y, -pos_int_limit, pos_int_limit );
 
@@ -188,8 +258,6 @@ void Control::control_position( float x, float y, float vx, float vy, float yaw 
     
     // SP_hover(0) = output(0);
     // SP_hover(1) = output(1);
-
-
 }
 
 void Control::initiate_landing(){
@@ -206,13 +274,13 @@ void Control::run( sensor_data_t raw, estimator_data_t est ){
 
     uint16_t control_throttle;
 
+    read_control_input();
+
     if( status == CONTROL_STATUS_STATIONARY ){
         control_hover( raw.roll, raw.pitch, 0, raw.gx, raw.gy, 0, 0, 0 );
         control_throttle = 0;
-
-        // Roll pitch test
-        control_throttle = 1500; // Will be limited by max-throttle
     }else{          
+        
         control_position( est.x, est.y, est.vx, est.vy, raw.yaw );
         control_hover( raw.roll, raw.pitch, raw.yaw, raw.gx, raw.gy, raw.gz , est.z, est.vz  );
         control_throttle = (uint16_t)(MOTOR_KRPM_TO_DSHOT * U(4));
@@ -237,6 +305,8 @@ void Control::run( sensor_data_t raw, estimator_data_t est ){
 
     write_motor( DSHOT_PORT_1, data.dshot );
     write_motor( DSHOT_PORT_2, data.dshot );
+
+
 
 }
 

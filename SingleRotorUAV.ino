@@ -14,25 +14,28 @@ tlm_data_t tlm;
 uint32_t control_timer = 0;
 uint32_t flow_timer = 0;
 
-uint8_t rc_input1_pin = 19;
-uint16_t rc_input1;
-elapsedMicros rc_input1_timer;
-
 uint16_t throttle = 0;
 int cmd;
 
-void rc_input1_interrupt(){
-   if( digitalReadFast(rc_input1_pin) == HIGH )
-      rc_input1_timer = 0;
-   else 
-      rc_input1 = rc_input1_timer;
-}
+
+bool enable_loiter = false;
+float loiter_radius = 0.5; // Meter
+float loiter_time = 20; // Seconds
+uint32_t loiter_timer = 0;
+
+
+const int path_count = 8;
+float xref[path_count] = {0, 1, 1, -1, -1, 1, 1, 0};
+float yref[path_count] = {0, 0, -1, -1, 1, 1, 0, 0};
+bool follow_path = false;
+
+
 
 void setup() {
     Serial.begin(115200);
     Serial.println("Initializing...");
 
-    attachInterrupt( rc_input1_pin, rc_input1_interrupt, CHANGE );
+    // attachInterrupt( rc_input1_pin, rc_input1_interrupt, CHANGE );
 
     // Prepare communication for telemetry and commands
     comm.init();
@@ -68,10 +71,12 @@ void loop() {
 
         case COMMAND_LAND:
           control.initiate_landing();
+          enable_loiter = false;
         break;
 
         case COMMAND_TAKEOFF:
           control.initiate_takeoff( values[0] );
+          enable_loiter = false;
         break;
         
         case COMMAND_SET_X:
@@ -97,6 +102,7 @@ void loop() {
         case COMMAND_SET_ORIGIN:
           sensors.set_origin();
           control.reset_integral_action();
+          enable_loiter = false;
         break;  
 
         case DATA_UPDATE_POS:
@@ -104,7 +110,11 @@ void loop() {
 
           last_vicon = millis();
         break;
-        
+
+        case COMMAND_LOITER: 
+          // Start following circle path until told to stop / land.
+          follow_path = true;
+          
         default:
           /* Serial.print("Unknown command: ");
           Serial.print( cmd ); Serial.print( " - With data: " );
@@ -127,17 +137,12 @@ void loop() {
       
       // Run estimator and control
       sensors.run_estimator();
+      
+      if( follow_path ){
+        path_follower();
+      }
 
       control.run( sensors.data, sensors.estimate );
-      
-      // Manuel throttle override
-      uint16_t temp = constrain(rc_input1, 930, 1910);
-      uint16_t rc_throttle = map(temp, 930, 1910, MOTOR_MIN_DSHOT, MOTOR_MAX_DSHOT);
-      control.set_max_throttle(rc_throttle);
-
-      if( rc_throttle == 0 ){
-        control.reset_integral_action();
-      }
 
       // Save control and estimates to tlm. Write telemetry
       tlm.estimate = sensors.estimate;
@@ -145,4 +150,75 @@ void loop() {
       comm.write_udp_telemetry( tlm );
 
     }
+}
+
+void generate_loiter(){
+
+  static float xpre = 0;
+  static float ypre = 0;
+  
+  float xref, yref, dx, dy, yawref;
+
+  float t = (float)(millis() - loiter_timer)/1000; // Seconds since start
+  float k = TWO_PI / loiter_time;
+
+  // Generate circular path for position controller
+  xref = sin( k * t ) * loiter_radius;
+  yref = cos( k * t ) * loiter_radius - loiter_radius; // Minus sin (clockwise flight)
+
+  dx = xref - xpre;
+  dy = yref - ypre;
+  
+  yawref = atan2( dy, dx );
+
+  control.set_reference( SETPOINT_X, xref ); 
+  control.set_reference( SETPOINT_Y, yref ); 
+  control.set_reference( SETPOINT_YAW, 0 ); 
+
+  xpre = xref;
+  ypre = yref;
+
+  // Serial.println( (String)xref + "," + (String)yref + "," + (String)yawref );
+
+}
+
+
+void path_follower(){
+
+  const float deadzone = 0.05;
+  const int stand_time = 2000; // 2 seconds
+  const float k = 0.5;
+
+  static int coordinate_id = 0;
+  static uint32_t timer = 0;
+  static bool reached = false;
+
+  float xr = k*xref[coordinate_id];
+  float yr = k*yref[coordinate_id];
+
+  if( ((xr - sensors.estimate.x) < deadzone && (yr - sensors.estimate.y) < deadzone ) && !reached ){
+    reached = true;
+    timer = millis();
+  }else{
+    control.set_reference(SETPOINT_X, xr);
+    control.set_reference(SETPOINT_Y, yr);  
+  }
+
+  if( reached ) {
+    if( millis() - timer > stand_time ){
+      Serial.println("Reached");
+      // NEXT POSITION
+      coordinate_id++;
+      reached = false;  
+      timer = 0;
+      
+      if( coordinate_id >= path_count ){
+        Serial.println("Reset");
+        coordinate_id = 0;
+        follow_path = false;
+      }
+    }
+  }
+
+    
 }
