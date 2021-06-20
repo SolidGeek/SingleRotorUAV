@@ -119,22 +119,23 @@ void Control::read_control_input(){
     uint16_t input1 = constrain( rc_input[0], 1100, 1900);
     float z_ref = ((float)map(input1, 1100, 1900, 0, (uint16_t)(SETPOINT_MAX_Z*1000)))/1000;
 
-    uint16_t input2 = constrain( rc_input[1], 1100, 1900);
+    /* uint16_t input2 = constrain( rc_input[1], 1100, 1900);
     float roll_ref = ((float)map(input2, 1100, 1900, -(uint16_t)(SETPOINT_MAX_ROLL*1000), (uint16_t)(SETPOINT_MAX_ROLL*1000)))/1000;
 
     uint16_t input3 = constrain( rc_input[2], 1100, 1900);
-    float pitch_ref = ((float)map(input3, 1100, 1900, -(uint16_t)(SETPOINT_MAX_PITCH*1000), (uint16_t)(SETPOINT_MAX_PITCH*1000)))/1000;
-
+    float pitch_ref = ((float)map(input3, 1100, 1900, -(uint16_t)(SETPOINT_MAX_PITCH*1000), (uint16_t)(SETPOINT_MAX_PITCH*1000)))/1000; */
 
     if( z_ref == 0 ){
         set_max_throttle(0); // Kill throttle
         reset_integral_action();
+
+    }else{
+        set_max_throttle(MOTOR_MAX_DSHOT);
     }
 
-
-    SP_hover(0) = roll_ref;
-    SP_hover(1) = pitch_ref;
-    SP_hover(6) = z_ref;
+    // Only update setpoint if takeoff has been commanded
+    if( status == CONTROL_STATUS_FLYING )
+        set_reference( SETPOINT_Z, z_ref );
 
 }
 
@@ -280,7 +281,6 @@ void Control::run( sensor_data_t raw, estimator_data_t est ){
         control_hover( raw.roll, raw.pitch, 0, raw.gx, raw.gy, 0, 0, 0 );
         control_throttle = 0;
     }else{          
-        
         control_position( est.x, est.y, est.vx, est.vy, raw.yaw );
         control_hover( raw.roll, raw.pitch, raw.yaw, raw.gx, raw.gy, raw.gz , est.z, est.vz  );
         control_throttle = (uint16_t)(MOTOR_KRPM_TO_DSHOT * U(4));

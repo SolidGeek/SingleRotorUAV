@@ -15,7 +15,7 @@
 #define MOTOR_MIN_DSHOT 0
 #define MOTOR_MAX_DSHOT 1500 // No more is needed to lift aircraft.
 
-#define SETPOINT_MAX_Z 1.0f // Max altitude
+#define SETPOINT_MAX_Z 1.0f // Max altitude (meters)
 #define SETPOINT_MAX_ROLL 0.1f // Max roll (radians)
 #define SETPOINT_MAX_PITCH 0.1f // Max pitch (radians)
 
@@ -153,7 +153,7 @@ private:
     // Output from position controller
     Matrix<2,1> U_pos = {0,0};
 
-    uint16_t max_throttle = DSHOT_MAX_OUTPUT;
+    uint16_t max_throttle = MOTOR_MAX_DSHOT;
 
 
     float error_integral_x = 0;
