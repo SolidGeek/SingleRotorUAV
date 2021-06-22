@@ -134,9 +134,10 @@ void Control::read_control_input(){
     }
 
     // Only update setpoint if takeoff has been commanded
-    if( status == CONTROL_STATUS_FLYING )
+    // Do not interfere with the landing sequence
+    if( status == CONTROL_STATUS_FLYING ){
         set_reference( SETPOINT_Z, z_ref );
-
+    }
 }
 
 
@@ -153,8 +154,11 @@ void Control::control_hover( float roll, float pitch, float yaw, float gx, float
 
     // Integral action for altitude (z)
     float error_z = ref(6) - z; 
+
+    // If the throttle output is less than the allowed maximum, or the z error is lower than 0, compute the integral
     if( data.dshot < max_throttle || error_z < 0 ){
-        // Smoother landing
+
+        // If the drone is landing, change how the integral behaves. 
         if( status == CONTROL_STATUS_LANDING ){
             if( z < 0.01 ){ // 10mm above ground
                 // We have landing, stop engines
