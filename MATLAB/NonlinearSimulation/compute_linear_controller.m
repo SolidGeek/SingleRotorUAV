@@ -54,11 +54,16 @@ X_red = [nw; wb; pw(3); vb(3)]; % Reduced state vector (only attitude and altitu
 X_hor = [ pw(1); pw(2); vb(1); vb(2) ]; % Reduced state vector for horizontal movements
 
 
+X_roll = [nw(1); wb(1); pw(1); vb(1)];
+
 % Input vector 
 U = [a1; a2; a3; a4; wt];
 
 % Input vector for horizontal model
 U_hor = [p; q];
+
+% Roll 
+U_roll = [a1; a2; a3; a4];
 
 %% Rotational dynamics
 
@@ -91,6 +96,12 @@ f_hor = [ pw_dot(1) ;
           pw_dot(2) ;
           vb_dot(1) ;
           vb_dot(2)];
+      
+      
+f_roll = [ nw_dot(1) ;
+          wb_dot(1)  ;
+          pw_dot(1)  ;
+          vb_dot(1) ];
   
 %% Linearization
 
@@ -107,6 +118,11 @@ B2 = jacobian(f_red, U);
 % Horizontal model (only x- and y-direction)
 A3 = jacobian( f_hor, X_hor );
 B3 = jacobian( f_hor, U_hor );
+
+
+% Single dimension model (roll/x axis)
+A4 = jacobian( f_roll, X_roll );
+B4 = jacobian( f_roll, U_roll );
 
 % The A and B matrixes are now filled with partial derivatives, similar to
 % an taylor expansion to approximate a nonlinear function/ODE
@@ -171,7 +187,7 @@ A_hint = [A_hint zeros(6,2) ];
 B_hint = [B_hor; zeros(2,2) ];
 C_hint = eye(6);
 D_hint = zeros(6,2);
-     
+
      
 %% Open Loop dynamics
 
@@ -193,6 +209,8 @@ Q = [ 1/0.1^2     0        0        0      0      0      0        0    ;  % Roll
       0        0        0        0      0      1/2^2  0        0       ;  % omega_z
       0        0        0        0      0      0      1/0.5^2    0       ;  % z
       0        0        0        0      0      0      0        1/1^2  ]; % v_z
+
+Q_red = Q;  
   
 % Integral action  
 Q(9,9) = [ 1/0.15^2 ]; % z
@@ -203,9 +221,10 @@ R = [ 1/10^2   0       0       0       0       ; % a1
       0        0       1/10^2  0       0       ; % a3
       0        0       0       1/10^2  0       ; % a4
       0        0       0       0       1/1^2  ]; % wt
-
+  
 % Compute "optimal" controller
 K_hov = lqr(sys_int, Q, R);
+K_red = lqr(sys_red, Q_red, R);
 
 % Compute integral limit matching the steady-state motor velocity
 int_lim = wt/K_hov(5,9) + wt*0.005;
@@ -214,25 +233,44 @@ sys_d = c2d(sys_int, 0.008, 'zoh' );
 
 K_lqrd = dlqr(sys_d.A, sys_d.B, Q, R);
 
-matrix_to_cpp( K_hov )
+% matrix_to_cpp( K_hov )
 
 % Calcuate closed loop system
-% cl_sys = ss((A_red - B_red*K_lqr), B_red, C_red, D_red );
+% figure(1)
+%cl_sys = ss((A_red - B_red*K_red), B_red, C_red, D_red );
+sys_cl_hov = feedback( sys_red*K_red, eye(8));
 
-Q_hor = [ 1/0.5^2  0         0        0        ;
+figure(1)
+pzmap(sys_cl_hov);
+[p,z] = pzmap(sys_cl_hov)
+grid on
+
+Q_pos = [ 1/0.5^2  0         0        0        ;
           0         1/0.5^2  0        0        ;
           0         0         1/2^2  0        ;
           0         0         0        1/2^2 ];
-     
-Q_hor(5:6,5:6) = [ 1/1^2  0
+
+Q_hor = Q_pos;      
+      
+Q_pos(5:6,5:6) = [ 1/1^2  0
                    0        1/1^2];
      
-R_hor = [ 1/0.05^2  0;
+R_pos = [ 1/0.05^2  0;
           0          1/0.05^2];
 
-K_pos = lqr(sys_hint, Q_hor, R_hor);
+K_pos = lqr(sys_hint, Q_pos, R_pos);
+K_hor = lqr(sys_hor, Q_hor, R_pos);
 
-matrix_to_cpp( K_pos )
+
+sys_cl_pos = feedback( sys_hor*K_hor, eye(4));
+
+figure(2)
+pzmap(sys_cl_pos);
+[p2,z2] = pzmap(sys_cl_pos)
+grid on
+% sys_total = series( sys_cl_pos, sys_cl_pos )
+
+% matrix_to_cpp( K_pos )
 
 %% Symbolic Discretization
 
