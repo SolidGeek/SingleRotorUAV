@@ -1,8 +1,6 @@
 
 *.asv
-*.slx
 simulation/slprj/
-*.slxc
 *.autosave
 *.original
 *.json
