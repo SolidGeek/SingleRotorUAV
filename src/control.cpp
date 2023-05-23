@@ -223,6 +223,21 @@ void Control::set_reference( control_setpoint_t id, float value ){
 
 }
 
+float Control::get_reference( control_setpoint_t id ){
+    float value; 
+
+    switch( id ){
+        case SETPOINT_X: value = SP_pos(0); break;
+        case SETPOINT_Y: value = SP_pos(1); break;
+        case SETPOINT_Z: value = SP_hover(6); break;
+        case SETPOINT_ROLL: value = SP_hover(0); break;
+        case SETPOINT_PITCH: value = SP_hover(1); break;
+        case SETPOINT_YAW: value = SP_hover(2); break;
+    }
+
+    return value;
+}
+
 void Control::control_position( float x, float y, float vx, float vy, float yaw ){
 
     Matrix<2,1> output;
@@ -307,10 +322,24 @@ void Control::run( sensor_data_t raw, estimator_data_t est ){
     else
         data.dshot = control_throttle;
 
+    if( get_reference( SETPOINT_Z ) == 0 ){
+
+        if( input_zero_timer == false ){
+            input_timer = millis();
+            input_zero_timer = true;
+        }
+        
+        if( millis() - input_zero_timer > 500 ){
+            data.dshot = 0;
+            input_zero_timer = false;
+            input_zero_timer = millis();
+        }
+    }
+
+    Serial.println(get_reference( data.dshot ));
+
     write_motor( DSHOT_PORT_1, data.dshot );
     write_motor( DSHOT_PORT_2, data.dshot );
-
-
 
 }
 

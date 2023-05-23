@@ -37,6 +37,17 @@ void setup() {
 
     // Important to init this last, otherwise IMU's buffer overflow and goes into error state....
     sensors.init();
+
+    // Sample IMU a couple of times
+    for(uint8_t i = 0; i < 100; i++){
+      sensors.sample_imu();
+      delay(10);  
+    }
+
+    sensors.set_origin();
+
+    // Set the status to flying (overriding GUI)
+    control.initiate_takeoff( 0 );
     
     Serial.println("Ready");
 }

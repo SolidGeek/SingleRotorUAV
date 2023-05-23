@@ -8,6 +8,7 @@
 #include <Servo.h>
 
 
+
 #define SERVO_MIN_TIMING 900
 #define SERVO_MID_TIMING 1500
 #define SERVO_MAX_TIMING 2100
@@ -76,7 +77,8 @@ public:
     void set_max_throttle( uint16_t dshot );
 
     void set_reference( control_setpoint_t id, float value );
-
+    float get_reference( control_setpoint_t id );
+    
     // Read external input and use as setpoints
     void read_control_input();
 
@@ -96,6 +98,9 @@ private:
     control_status_t status = CONTROL_STATUS_STATIONARY; 
 
     static const uint16_t servo_pins[];
+
+    uint32_t input_timer; 
+    bool input_zero_timer; 
 
     // LQR optimal gain for attitude controller
     /* 
